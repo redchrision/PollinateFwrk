@@ -1,0 +1,25 @@
+{
+  "name": "hardhat-project",
+  "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-typescript": "^7.26.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "babel-loader": "^9.2.1",
+    "hardhat": "^2.22.18",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.7.3",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "scripts": {
+    "build": "webpack",
+    "test": "webpack && npx hardhat test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.2.0",
+    "@uniswap/v2-core": "1.0.1",
+    "@uniswap/v2-periphery": "1.1.0-beta.0",
+    "typescript-require": "^0.3.0"
+  }
+}
