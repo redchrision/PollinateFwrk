@@ -1,0 +1,78 @@
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Set body styles for page margins and background */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333; /* Dark gray text color for readability */
+    background-color: #f4f4f4; /* Light gray background */
+    margin: 20px;
+}
+
+/* Default styles for headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #2c3e50; /* A darker shade for headings */
+    margin-bottom: 15px;
+}
+
+/* Styles for paragraphs and lists */
+p, ul, ol {
+    margin-bottom: 15px;
+}
+
+/* Button styling */
+button {
+    background-color: #3498db; /* Blue for buttons */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 1em;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+button:hover {
+    background-color: #2980b9; /* Darker blue on hover */
+}
+
+/* Form elements */
+input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff; /* White background for inputs */
+}
+
+/* Radio buttons and checkboxes */
+input[type="radio"], input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* Specific to this layout */
+#wallet-connected {
+    background-color: #fff; /* White background for the wallet section */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#advanced-options-container {
+    background-color: #ecf0f1; /* Light gray for advanced options */
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 4px;
+}
+
+.error-message {
+    color: red;
+}
