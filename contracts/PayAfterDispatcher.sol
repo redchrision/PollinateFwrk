@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2
-
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import "./interface/IPayAfterDispatcher.sol";
-
-import "hardhat/console.sol";
 
 contract PayAfterDispatcher is IPayAfterDispatcher {
     // PayAfter Data Format (each cell is 1 byte):
@@ -188,7 +185,7 @@ contract PayAfterDispatcher is IPayAfterDispatcher {
                     revert(revertReasonPtr, revertReasonLen)
                 }
             } else {
-                revert("Call failed without revert reason");
+                revert FailedCallNoReason(contractAddr, bytes4(callData[:4]));
             }
         }
     }

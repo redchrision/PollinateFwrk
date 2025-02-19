@@ -1,6 +1,8 @@
-pragma solidity =0.6.6;
+// SPDX-License-Identifier: MIT OR Apache-2
+pragma solidity =0.7.6;
+pragma abicoder v2;
 
-import '@uniswap/v2-periphery/contracts/UniswapV2Router01.sol';
+import '@uniswap/swap-router-contracts/contracts/SwapRouter02.sol';
 
 // Does nothing, but causes uniswap to be imported for test mocks.
 library ImportUniswapRouter {}

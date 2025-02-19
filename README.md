@@ -4,7 +4,7 @@ Flowers need to exchange pollen in order to fruit, but they are unable to move o
 enlist the help of bees by offering nectar as a reward.
 
 Likewise, smart contracts are unable to run themselves, so with the Pollinate Framework, they can
-enlist the help of pollinators by offering them rewards in the network's base token.
+enlist the help of *pollinators* by offering them rewards in the network's base token.
 
 The pollinate framework has two main components:
 
@@ -13,10 +13,10 @@ The pollinate framework has two main components:
 
 ## Periodic
 This is for contracts which need to periodically perform some background task such as paying out
-stakers, or re-computing collecting a data sample for a moving average. Nectar generation rate works
-similarly to crypto mining difficulty, except rather than an adjusting difficulty there is an
-adjusting payout. The available payout ("nectar") builds up until it becomes worthwhile for a
-pollinator to call the periodic function and collect it.
+stakers, or collecting a data sample for a moving average. Payment to the pollinators works similarly
+to crypto mining difficulty, except rather than an adjusting difficulty there is an adjusting payout.
+The available payout ("nectar") builds up until it becomes worthwhile for a pollinator to call the
+periodic function and collect it.
 
 Every X number of calls (configurable) the periodic framework re-adjusts the amount of nectar that is
 made available per second, decreasing it if the periodic function is getting called too often, and
@@ -36,6 +36,10 @@ contract ExamplePeriodic is Periodic {
     function periodic() external override {
         counter++;
     }
+    // Add a default receiver which adds the coins as nectar
+    receive() external payable {
+        IPeriodicDispatcher(periodicDispatcher()).addNectar{ value: msg.value }(address(this));
+    }
 }
 ```
 
@@ -45,7 +49,7 @@ The three arguments you must provide to the `Periodic()` constructor:
 * `uint _initialPayPerPeriod`: Initial payout per cycle time. Because the retarget will not
 come until `_cyclesPerRetarget` actual calls have occurred, you generally want to err on the
 side of generosity. The retargetting algorithm will re-adjust to seek the correct cycle rate.
-However, the algorithm will only (at maximum) halve the nectar payout rate, so if your
+However, each retarget event will only (at maximum) halve the nectar payout rate, so if your
 initial payout is *too* generous, it will take a number of retargets before it has cut back to
 the right amount.
 
@@ -60,8 +64,8 @@ logic think it needs to increase the nectar payout all of the time.
 
 If you have a pre-existing contract and you would like to offload the job of calling its
 periodic maintanence function, you may easily write a new `Periodic` contract which calls
-it. Once you are done, then you send some tokens to `PeriodicDispatcher.addNectar()` to
-fund the periodic calling of your contract.
+it. Once you are done, just send some tokens to `PeriodicDispatcher.addNectar()` to fund
+the periodic calling of your contract.
 
 ### Advanced Periodic
 If you are writing a contract which should sell its own tokens in order to fund its periodic

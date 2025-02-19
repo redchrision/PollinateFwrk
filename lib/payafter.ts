@@ -222,7 +222,7 @@ export const estimateGasCustom = async (
     }
 
     const signed = await signCalls(fakeSigner, calls, realFees);
-    return await dispatcher.connect(signer).dispatch.estimateGas(signed, '0x');
+    return await (dispatcher.connect(signer) as ethers.Contract).dispatch.estimateGas(signed, '0x');
 };
 
 export const getDispatcher = (provider: ethers.Provider, address?: string) =>
@@ -232,10 +232,9 @@ export const getUniswapV2Helper = (provider: ethers.Provider, address?: string) 
     new ethers.Contract(address || UNISWAPV2_HELPER_ADDR, UNISWAPV2_HELPER_ABI, provider);
 
 export const estimateGas = async (
-    provider: ethers.Provider,
-    signerAddress: string,
+    signer: ethers.Signer,
     calls: string[],
     fees: number | FeeEntry_t[],
     dispatcherAddress?: string
 ): Promise<bigint> => await estimateGasCustom(
-    provider, signerAddress, calls, fees, getDispatcher(provider, dispatcherAddress));
+    signer, calls, fees, getDispatcher(signer.provider, dispatcherAddress));

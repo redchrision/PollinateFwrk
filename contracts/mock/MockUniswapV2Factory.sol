@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.24;
+
+// This file is derived from UniswapV2Factory and therefore has the same license
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
-// import './interfaces/IUniswapV2Factory.sol';
-// import './UniswapV2Pair.sol';
 
 contract MockUniswapV2Factory is IUniswapV2Factory {
     address public feeTo;
@@ -11,8 +12,6 @@ contract MockUniswapV2Factory is IUniswapV2Factory {
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
-
-    // event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
     constructor(address _feeToSetter) {
         feeToSetter = _feeToSetter;
@@ -27,6 +26,9 @@ contract MockUniswapV2Factory is IUniswapV2Factory {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
+        // This is the bytecode of UniswapPair. The UniswapRouter requires
+        // precisely this bytecode and any changes of compiler version or flags
+        // will cause it to change.
         bytes memory bytecode =
             hex'60806040526001600c5534801561001557600080fd5b5060405146908060'
             hex'52612d228239604080519182900360520182208282018252600a8352692a'

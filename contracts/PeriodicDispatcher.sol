@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT OR Apache-2
-
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";

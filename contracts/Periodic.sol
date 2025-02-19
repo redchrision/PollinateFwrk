@@ -12,8 +12,11 @@ abstract contract Periodic is BasePeriodic {
     ) BasePeriodic(
         _targetSecondsPerCycle,
         _cyclesPerRetarget,
-        _initialPayPerPeriod,
-        Generate.PERIODIC_DISPATCHER
+        _initialPayPerPeriod
     ) {
+    }
+
+    function periodicDispatcher() override public pure returns (address payable) {
+        return payable(Generate.PERIODIC_DISPATCHER);
     }
 }

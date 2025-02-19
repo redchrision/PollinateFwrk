@@ -11,6 +11,8 @@ interface IPayAfterDispatcher {
     event PayAfter(bytes32 dataHash, address signer, uint64 expiration);
     event PayAfterExpired(bytes32 dataHash);
 
+    error FailedCallNoReason(address contractAddr, bytes4 functionId);
+
     function getSigner() external view returns (address);
     function getPastExecution(bytes32 executionHash) external view returns (State memory);
     function getRequiredFee() external view returns (uint);

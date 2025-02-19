@@ -1,0 +1,40 @@
+Index: Pollinate/node_modules/@uniswap/swap-router-contracts/contracts/libraries/UniswapV2Library.sol
+===================================================================
+--- Pollinate.orig/node_modules/@uniswap/swap-router-contracts/contracts/libraries/UniswapV2Library.sol
++++ Pollinate/node_modules/@uniswap/swap-router-contracts/contracts/libraries/UniswapV2Library.sol
+@@ -22,6 +22,7 @@ library UniswapV2Library {
+     ) internal pure returns (address pair) {
+         (address token0, address token1) = sortTokens(tokenA, tokenB);
+         pair = address(
++            uint160(
+             uint256(
+                 keccak256(
+                     abi.encodePacked(
+@@ -32,6 +33,7 @@ library UniswapV2Library {
+                     )
+                 )
+             )
++            )
+         );
+     }
+ 
+Index: Pollinate/node_modules/@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol
+===================================================================
+--- Pollinate.orig/node_modules/@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol
++++ Pollinate/node_modules/@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol
+@@ -33,6 +33,7 @@ library PoolAddress {
+     function computeAddress(address factory, PoolKey memory key) internal pure returns (address pool) {
+         require(key.token0 < key.token1);
+         pool = address(
++            uint160(
+             uint256(
+                 keccak256(
+                     abi.encodePacked(
+@@ -43,6 +44,7 @@ library PoolAddress {
+                     )
+                 )
+             )
++            )
+         );
+     }
+ }

@@ -8,7 +8,6 @@ abstract contract BasePeriodic is IPeriodic {
     uint64 immutable self_targetSecondsPerCycle;
     uint64 immutable self_cyclesPerRetarget;
     uint64 immutable self_deployTime;
-    IPeriodicDispatcher immutable self_dispatcher;
 
     uint self_currentPayPerPeriod;
     uint64 self_cycles;
@@ -18,16 +17,14 @@ abstract contract BasePeriodic is IPeriodic {
     constructor(
         uint64 _targetSecondsPerCycle,
         uint64 _cyclesPerRetarget,
-        uint _initialPayPerPeriod,
-        address _dispatcher
+        uint _initialPayPerPeriod
     ) {
         self_targetSecondsPerCycle = _targetSecondsPerCycle;
         self_cyclesPerRetarget = _cyclesPerRetarget;
         self_deployTime = uint64(block.timestamp);
 
         // This will fail the deployment if self_dispatcher is not a real dispatcher
-        IPeriodicDispatcher(_dispatcher).balanceOf(address(0));
-        self_dispatcher = IPeriodicDispatcher(_dispatcher);
+        IPeriodicDispatcher(periodicDispatcher()).balanceOf(address(0));
 
         self_currentPayPerPeriod = _initialPayPerPeriod;
         self_cycles = 1;
@@ -71,15 +68,13 @@ abstract contract BasePeriodic is IPeriodic {
         return secs * payPerSecond;
     }
 
-    function periodicDispatcher() public view returns (address payable) {
-        return payable(address(self_dispatcher));
-    }
-
     function nectarShortfall() public view returns (uint) {
         uint na = nectarAvailable();
-        uint bal = self_dispatcher.balanceOf(address(this));
+        uint bal = IPeriodicDispatcher(periodicDispatcher()).balanceOf(address(this));
         return (bal < na) ? (na - bal) : 0;
     }
+
+    function periodicDispatcher() virtual public view returns (address payable);
 
     function periodic() virtual external;
 }
