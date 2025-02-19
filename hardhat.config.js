@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+const config = require('./config.js');
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -11,7 +12,7 @@ module.exports = {
             enabled: true,
             runs: 1000,
           },
-          evmVersion: "cancun",
+          evmVersion: "paris",
           viaIR: true
         },
       },
@@ -26,5 +27,31 @@ module.exports = {
         },
       }
     ],
+  },
+  networks: {
+    electroneum: {
+      _url: 'https://rpc.electroneum.com',
+      url: 'https://rpc.ankr.com/electroneum',
+      accounts: [config.deployerPrivateKey],
+    },
+  },
+  etherscan: {
+    apiKey: {
+      // Is not required by blockscout. Can be any non-empty string
+      electroneum: "x"
+    },
+    customChains: [
+      {
+        network: "electroneum",
+        chainId: 52014,
+        urls: {
+          apiURL: "https://blockexplorer.electroneum.com/api",
+          browserURL: "https://blockexplorer.electroneum.com/",
+        }
+      }
+    ]
+  },
+  sourcify: {
+    enabled: false
   }
 };

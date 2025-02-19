@@ -83,7 +83,7 @@ In this example, we use UniswapV2 to sell a portion of the yielded tokens in ord
 the shortfall.
 
 ```solidity
-// 2. find out how much additional ETH is needed
+// 2. find out how much additional the base token is needed
 uint shortfall = nectarShortfall();
 
 address[] memory path = new address[](2);
@@ -93,7 +93,7 @@ path[1] = sneezeMarket.WETH();
 // 3. Auth the sneeze market to use up to amt
 sneeze.approve(address(sneezeMarket), amt);
 
-// 4. Swap to get that amount of ETH -> payto the dispatcher
+// 4. Swap to get that amount of the base token -> payto the dispatcher
 if (shortfall > 0) {
     uint balance = sneeze.balanceOf(address(this));
     sneezeMarket.swapTokensForExactETH(shortfall, amt, path, periodicDispatcher(), block.timestamp);

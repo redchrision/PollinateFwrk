@@ -23,9 +23,6 @@ abstract contract BasePeriodic is IPeriodic {
         self_cyclesPerRetarget = _cyclesPerRetarget;
         self_deployTime = uint64(block.timestamp);
 
-        // This will fail the deployment if self_dispatcher is not a real dispatcher
-        IPeriodicDispatcher(periodicDispatcher()).balanceOf(address(0));
-
         self_currentPayPerPeriod = _initialPayPerPeriod;
         self_cycles = 1;
         self_lastRetargetTime = uint64(block.timestamp);
