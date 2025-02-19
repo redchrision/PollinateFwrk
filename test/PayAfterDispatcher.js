@@ -13,19 +13,12 @@ async function deployUniswap() {
   const mockWETH = await MockWETH.deploy();
   const MockUniswapV2Factory = await ethers.getContractFactory("MockUniswapV2Factory");
   const uniswapV2Factory = await MockUniswapV2Factory.deploy(ZERO_ADDR);
-  const SwapRouter02 = await ethers.getContractFactory("SwapRouter02");
   const UniswapV2Router01 = await ethers.getContractFactory("UniswapV2Router01");
   const uniswapV2Router02 = await UniswapV2Router01.deploy(
     await uniswapV2Factory.getAddress(),
     await mockWETH.getAddress(),
   );
-  const swapRouter02 = await SwapRouter02.deploy(
-    await uniswapV2Factory.getAddress(),
-    ZERO_ADDR, // factoryV3,
-    ZERO_ADDR, // positionManager
-    await mockWETH.getAddress(),
-  );
-  return { uniswapV2Router02, swapRouter02, uniswapV2Factory, mockWETH };
+  return { uniswapV2Router02, uniswapV2Factory, mockWETH };
 }
 
 async function deployTokenAndLp(pad, amountTokenToLp, amountEthToLp) {
@@ -33,7 +26,7 @@ async function deployTokenAndLp(pad, amountTokenToLp, amountEthToLp) {
   const mockToken = await MockToken.deploy(await pad.getAddress());
   console.log("Mock Token:", await mockToken.getAddress());
 
-  const { uniswapV2Router02, swapRouter02, uniswapV2Factory, mockWETH } = await deployUniswap();
+  const { uniswapV2Router02, uniswapV2Factory, mockWETH } = await deployUniswap();
 
   mockToken.approve(await uniswapV2Router02.getAddress(), amountTokenToLp);
 
@@ -52,12 +45,11 @@ async function deployTokenAndLp(pad, amountTokenToLp, amountEthToLp) {
 
   const UniswapV2Helper = await ethers.getContractFactory("UniswapV2Helper");
   const uniswapV2Helper = await UniswapV2Helper.deploy(
-    await swapRouter02.getAddress(),
+    await uniswapV2Router02.getAddress(),
     await pad.getAddress(),
-    await mockWETH.getAddress(),
   );
 
-  return { swapRouter02, uniswapV2Factory, mockWETH, lpTokenAddress, mockToken, uniswapV2Helper };
+  return { uniswapV2Router02, uniswapV2Factory, mockWETH, lpTokenAddress, mockToken, uniswapV2Helper };
 }
 
 async function deploy() {
@@ -105,7 +97,7 @@ describe("PayAfterDispatcher", function () {
     it("Can pay it's own fee", async function () {
       const { pad, mockCallable, owner, otherAccount } = await loadFixture(deploy);
       const {
-        swapRouter02,
+        uniswapV2Router02,
         uniswapV2Factory,
         mockWETH,
         lpTokenAddress,
@@ -133,7 +125,7 @@ describe("PayAfterDispatcher", function () {
       calls.push(await prepareCall(uniswapV2Helper, "coverFee", [await mockToken.getAddress()]));
 
       // Pre-estimate the gas
-      const gas = 100n; //await estimateGasCustom(otherAccount, calls, 4, pad);
+      const gas = await estimateGasCustom(otherAccount, calls, 4, pad);
       const feeData = await ethers.provider.getFeeData();
       const baseFeePerGas = feeData.maxFeePerGas - feeData.maxPriorityFeePerGas;
       console.log(
@@ -152,7 +144,7 @@ describe("PayAfterDispatcher", function () {
       ];
 
       // Re-check the gas
-      // console.log('Gas2:', await estimateGasCustom(otherAccount, calls, fees, pad));
+      console.log('Gas2:', await estimateGasCustom(otherAccount, calls, fees, pad));
 
       // Sign the calls
       let signed = await signCalls(otherAccount, calls, fees);

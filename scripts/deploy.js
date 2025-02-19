@@ -6,7 +6,8 @@ const GENERATE = [
     './lib/generate.ts',
 ]
 
-const UNISWAPV2_ROUTER_ADDR = '0x'; // TODO
+// https://blockexplorer.electroneum.com/address/0x072D4706f9A383D5608BD14B09b41683cb95fFd7?tab=read_contract#address-tabs
+const UNISWAPV2_ROUTER_ADDR = '0x072D4706f9A383D5608BD14B09b41683cb95fFd7';
 const SPECS = {
 
 };
@@ -110,3 +111,4 @@ async function main() {
 
     
 }
+main();

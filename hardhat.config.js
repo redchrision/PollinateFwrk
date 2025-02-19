@@ -11,13 +11,13 @@ module.exports = {
             enabled: true,
             runs: 1000,
           },
-          evmVersion: "paris",
+          evmVersion: "cancun",
           viaIR: true
         },
       },
       {
         // For testing Uniswap
-        version: '0.7.6',
+        version: '0.6.6',
         settings: {
           optimizer: {
             enabled: true,
