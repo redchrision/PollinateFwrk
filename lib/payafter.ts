@@ -26,6 +26,9 @@ export type FeeEntry_t = {
     amt: bigint; 
     feeTime: number; 
     timeUnit: number; 
+    toBinary: (isLast: boolean) => bigint;
+    timeSeconds: () => bigint;
+    amtRounded: () => bigint;
 };
 
 export type SelectTimeUnit_t = {
@@ -47,6 +50,81 @@ export type SelectTimeUnit_t = {
 
 export type InitialFeeTime_t = FeeEntry_t & { after: (feeTime: number) => Readonly<SelectTimeUnit_t> }
 
+//const MAX_VALID_FEE = BigInt(0x1fff) << BigInt(241);
+const MAX_VALID_FEE = (BigInt(1) << BigInt(96)) - BigInt(1);
+const KILL_FEE = BigInt(1) << BigInt(256);
+const MAX_FEE_BASE = (BigInt(1) << BigInt(13)) - BigInt(1);
+
+const amtRounded = (amt: bigint): bigint => {
+    if (amt > MAX_VALID_FEE) {
+        throw new Error(`Unable to represent fees larger than ${MAX_VALID_FEE}`);
+    }
+    let feeExp = BigInt(0);
+    while (amt > MAX_FEE_BASE) {
+        amt >>= BigInt(1);
+        feeExp++;
+    }
+    return amt << feeExp;
+}
+
+const feeToBinary = (f: FeeEntry_t, isLast: boolean): bigint => {
+
+    if (typeof f.amt !== 'bigint' || typeof f.feeTime !== 'number' || typeof f.timeUnit !== 'number') {
+        if (typeof(f) === 'object' && 'seconds' in f) {
+            throw new Error("Invalid fee entry, it looks like you didn't specify the unit, for example " +
+                "makeFee(x).after(3) is invalid, makeFee(x).after(3).days is valid.");
+        } else {
+            throw new Error("Invalid fee entry: " + f);
+        }
+    }
+
+    let packedFee: number = 0;
+    const PACKED_KILL_FEE = (255 - 11) << 13;
+    if (f.amt > MAX_VALID_FEE) {
+        if (f.amt === (BigInt(1) << BigInt(256))) {
+            packedFee = PACKED_KILL_FEE;
+        } else {
+            throw new Error("Invalid fee: " + f.amt.toString());
+        }
+    } else {
+        let feeExp = 0;
+        let fee = f.amt;
+        while (fee > MAX_FEE_BASE) {
+            fee >>= BigInt(1);
+            feeExp++;
+        }
+        packedFee = (feeExp << 13) | Number(fee);
+    }
+
+    const packedTime = (f.timeUnit << 7) | f.feeTime;
+
+    const PACKED_FEE_WIDTH = 13 + 8;
+
+    let feeOut = BigInt((packedTime << PACKED_FEE_WIDTH) | packedFee);
+    if (isLast) {
+        feeOut |= (BigInt(1) << BigInt(31));
+    }
+    return feeOut;
+};
+
+const feeTimetimeSeconds = (fee: FeeEntry_t): bigint => {
+    const FTM = [
+        1,
+        60,
+        60*60,
+        60*60*24,
+        60*60*24*7,
+        60*60*24*30,
+        60*60*24*365,
+    ];
+
+    if (fee.timeUnit < 0 || fee.timeUnit >= FTM.length) {
+        throw new Error("feeTimetimeSeconds: Invalid timeUnit");
+    }
+
+    return BigInt(FTM[fee.timeUnit]) * BigInt(fee.feeTime);
+};
+
 export const makeFee = (amt: bigint): Readonly<InitialFeeTime_t> => {
     try { 
         amt = BigInt(amt.toString()) + BigInt(0); 
@@ -54,18 +132,31 @@ export const makeFee = (amt: bigint): Readonly<InitialFeeTime_t> => {
         throw new Error("makeFee(): amt must be a BigNum");
     }
 
-    const outf = (timeUnit: number) => Object.freeze({
-        amt: amt,
-        feeTime: feeTime,
-        timeUnit: timeUnit
-    });
+    if (amt > MAX_VALID_FEE && amt !== KILL_FEE) {
+        throw new Error("makeFee(): amt cannot exceed 2**96 - 1");
+    }
+
+    const outf = (timeUnit: number): FeeEntry_t => {
+        const out = Object.freeze({
+            amt: amt,
+            feeTime: feeTime,
+            timeUnit: timeUnit,
+            toBinary: (isLast: boolean) => feeToBinary(out, isLast),
+            timeSeconds: () => feeTimetimeSeconds(out),
+            amtRounded: () => amtRounded(amt),
+        });
+        return out;
+    };
 
     let feeTime: number;
 
-    return Object.freeze({
+    const out = Object.freeze({
         amt,
         feeTime: 0,
         timeUnit: 0,
+        toBinary: (isLast: boolean) => feeToBinary(out, isLast),
+        timeSeconds: () => feeTimetimeSeconds(out),
+        amtRounded: () => amtRounded(amt),
         after: (feeTimeInput: number) => {
             feeTime = feeTimeInput;
             if (feeTime < 1 || feeTime > 127 || !Number.isInteger(feeTime)) {
@@ -89,81 +180,25 @@ export const makeFee = (amt: bigint): Readonly<InitialFeeTime_t> => {
             });
         }
     });
+    return out;
 };
 
-export const makeInvalid = (): Readonly<InitialFeeTime_t> => makeFee(BigInt(1) << BigInt(256));
-
-const feeTimeToSeconds = (fee: FeeEntry_t): bigint => {
-    const FTM = [
-        1,
-        60,
-        60*60,
-        60*60*24,
-        60*60*24*7,
-        60*60*24*30,
-        60*60*24*365,
-    ];
-
-    if (fee.timeUnit < 0 || fee.timeUnit >= FTM.length) {
-        throw new Error("feeTimeToSeconds: Invalid timeUnit");
-    }
-
-    return BigInt(FTM[fee.timeUnit]) * BigInt(fee.feeTime);
-};
+export const makeInvalid = (): Readonly<InitialFeeTime_t> => makeFee(KILL_FEE);
 
 const makeFeeEntries = (fees: FeeEntry_t[]): string => {
-    const out: string[] = [];
-    let lastSec: bigint = BigInt(-1);
-
-    for (let i = 0; i < fees.length; i++) {
-        const f = fees[i];
-        if (typeof f.amt !== 'bigint' || typeof f.feeTime !== 'number' || typeof f.timeUnit !== 'number') {
-            if (typeof(f) === 'object' && 'seconds' in f) {
-                throw new Error("Invalid fee entry, it looks like you didn't specify the unit, for example " +
-                    "makeFee(x).after(3) is invalid, makeFee(x).after(3).days is valid.");
-            } else {
-                throw new Error("Invalid fee entry: " + f);
-            }
-        }
-
-        const nextSec = feeTimeToSeconds(f);
+    let lastSec = BigInt(-1);
+    for (const f of fees) {
+        const nextSec = feeTimetimeSeconds(f);
         if (nextSec <= lastSec) {
             throw new Error("Each fee entry time must be further in the future than the last, " +
                 "for example [ makeFee(x).after(48).hours, makeFee(y).after(1).day ] is invalid. " +
                 "Last Seconds: " + lastSec.toString() + ", Next Seconds: " + nextSec.toString());
         }
         lastSec = nextSec;
-
-        let packedFee: number = 0;
-        const MAX_VALID_FEE = BigInt(0x1fff) << BigInt(241);
-        const PACKED_KILL_FEE = (255 - 11) << 13;
-        if (f.amt > MAX_VALID_FEE) {
-            if (f.amt === (BigInt(1) << BigInt(256))) {
-                packedFee = PACKED_KILL_FEE;
-            } else {
-                throw new Error("Invalid fee: " + f.amt.toString());
-            }
-        } else {
-            const MAX_FEE_BASE = (BigInt(1) << BigInt(13)) - BigInt(1);
-            let feeExp = 0;
-            let fee = f.amt;
-            while (fee > MAX_FEE_BASE) {
-                fee >>= BigInt(1);
-                feeExp++;
-            }
-            packedFee = (feeExp << 13) | Number(fee);
-        }
-
-        const packedTime = (f.timeUnit << 7) | f.feeTime;
-
-        const PACKED_FEE_WIDTH = 13 + 8;
-
-        const fee = Buffer.alloc(4);
-        fee.writeUInt32BE((packedTime << PACKED_FEE_WIDTH) | packedFee);
-        if (i + 1 >= fees.length) {
-            fee[0] |= (1 << 7);
-        }
-        out.push(fee.toString('hex'));
+    }
+    const out = [];
+    for (let i = 0; i < fees.length; i++) {
+        out.push(fees[i].toBinary(i === fees.length - 1).toString(16).padStart(8,'0'));
     }
     return out.join('');
 };
@@ -179,7 +214,6 @@ const hexToBytes = (hex: string): Uint8Array => {
 
 export const signCalls = async (signer: Signer, calls: string[], fees: FeeEntry_t[]): Promise<string> => {
     const csum = (await signer.getAddress()).slice(-6);
-
     const ts = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
 
     if (fees.length < 1) { 
@@ -192,8 +226,12 @@ export const signCalls = async (signer: Signer, calls: string[], fees: FeeEntry_
 
     const signedData = csum + ts + feeEntries + data;
 
+    const network = await signer.provider.getNetwork();
+    const chainId = network.chainId.toString(16).padStart(64, '0');
+
     const hash = ethers.keccak256('0x' + signedData);
-    const signature = await signer.signMessage(hexToBytes(hash.slice(2)));
+    const hash2 = ethers.keccak256(hash + chainId);
+    const signature = await signer.signMessage(hexToBytes(hash2.slice(2)));
 
     return signature + signedData;
 };
@@ -215,7 +253,15 @@ export const estimateGasCustom = async (
     if (typeof(fees) === 'number') {
         realFees = [];
         for (let i = 0; i < fees; i++) {
-            realFees.push(makeFee(BigInt(1)).after(i+1).seconds);
+            if (i === 0) {
+                realFees.push(makeFee(BigInt(1)));
+            } else if (i === fees - 1) {
+                // In testing, we put the fee changes years in the future to ensure it will
+                // always select the first one, and in no case will it fail for invalidation.
+                realFees.push(makeInvalid().after(i+1).years);
+            } else {
+                realFees.push(makeFee(BigInt(1) << BigInt(i)).after(i+1).years);
+            }
         }
     } else {
         realFees = fees as FeeEntry_t[];

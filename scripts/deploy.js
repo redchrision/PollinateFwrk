@@ -8,13 +8,14 @@ const GENERATE = [
 ]
 
 const SPECS = {
-    PeriodicDispatcher: ["0xbB07E62daD1cF13261b9812aB93585230Ce31F52",true],
-    PayAfterDispatcher: ["0x26399ABC180Ebc22a957Dbcf9Ec2070bfD806d70",true],
-    UniswapV2Helper: ["0x69733fC2968C52836c5914846dCA0598167F345D",true],
-    Sneeze: ["0x4eE9ECe67816eBd9B60648947438c3bfC8f587E8",true],
-    SneezeMine: ["0x5d596463Bb9073e9a8Cc30a3eAA1442EFcC707fc",true],
+    PeriodicDispatcher: ["0xc87CFdc32244802C03e99870F719f9f92F34750A",true],
+    PayAfterDispatcher: ["0x0A5D5350C01522DE37d64392E4af746899143BF9",true],
+    UniswapV2Helper: ["0x1431614A5B6C091b8cB78dD84946CE09F7ffc237",true],
+    Sneeze: ["0xacAB8A2C6E970AE050C72737F4D9e3F4b090e3a8",true],
+    SneezeMine: ["0x4530F744Ca8562619EF75C70C9f88Df7533b2b95",true],
 };
-const LP_TOKEN = '0xcE1Bb553E75EE2504f8EDF91d77FCEd181BB582b';
+let LP_TOKEN = '';
+LP_TOKEN = "0x99802D0b04D007794833272B45Cabd975e837c32";
 
 async function deployOne0(name, args) {
     if (!ethers.isAddress(SPECS[name][0])) {
@@ -110,7 +111,7 @@ const getLPTokenContract = async (token) => {
   
     const lpTokenAddress = await uniswapV2Factory.getPair(weth, await token.getAddress());
     const lpToken = await ethers.getContractAt('UniswapV2Pair', lpTokenAddress);
-    console.log(`const LP_TOKEN = "${await lpToken.getAddress()}]";`);
+    console.log(`const LP_TOKEN = "${await lpToken.getAddress()}";`);
   
     return lpToken;
 };

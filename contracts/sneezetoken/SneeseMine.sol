@@ -16,22 +16,26 @@ contract SneezeMine is Periodic {
     uint256 constant INITIAL_PAYOUT = 5 * 10**18;
     uint64 constant MIN_SEC_PER_PAYOUT = 60;
 
+    uint constant GEWI = 10**9;
+
     IERC20 immutable sneeze;
-    IUniswapV2Router01 immutable sneezeMarket;
+    IUniswapV2Router01 immutable uniswap;
     uint64 immutable launchTime;
 
     uint64 lastPayoutTime;
 
     constructor(
         IERC20 _sneeze,
-        IUniswapV2Router01 _sneezeMarket
+        IUniswapV2Router01 _uniswap
     ) Periodic(
         60 * 10,                       // Target cycle time is 10 minutes
         100,                           // Retarget every 100 cycles
-        1 * 10**18 / uint(2726) / 10   // Initial pay per 10 min is 10 cents
+        331712 * GEWI * 2              // Initial gas estimation from testing shows 331712 gas,
+                                       // Gas cost from block explorer is 1 GWEI,
+                                       // double it for safety margin.
     ) {
         sneeze = _sneeze;
-        sneezeMarket = _sneezeMarket;
+        uniswap = _uniswap;
         launchTime = uint64(block.timestamp);
         lastPayoutTime = uint64(block.timestamp);
     }
@@ -53,27 +57,27 @@ contract SneezeMine is Periodic {
 
         address[] memory path = new address[](2);
         path[0] = address(sneeze);
-        path[1] = sneezeMarket.WETH();
+        path[1] = uniswap.WETH();
 
         // 3. Auth the sneeze market to use up to amt
-        sneeze.approve(address(sneezeMarket), amt);
+        sneeze.approve(address(uniswap), amt);
 
         // 4. Swap to get that amount of ETH -> payto the dispatcher
         if (shortfall > 0) {
             uint balance = sneeze.balanceOf(address(this));
-            sneezeMarket.swapTokensForExactETH(shortfall, amt, path, periodicDispatcher(), block.timestamp);
+            uniswap.swapTokensForExactETH(shortfall, amt, path, periodicDispatcher(), block.timestamp);
             amt -= (balance - sneeze.balanceOf(address(this)));
         }
 
         // 5. Swap half of our amt
         {
             uint balance = sneeze.balanceOf(address(this));
-            sneezeMarket.swapExactTokensForETH(amt / 2, 0, path, address(this), block.timestamp);
+            uniswap.swapExactTokensForETH(amt / 2, 0, path, address(this), block.timestamp);
             amt -= (balance - sneeze.balanceOf(address(this)));
         }
 
         // 6. deposit ETH + remaining half and burn the tokens
-        sneezeMarket.addLiquidityETH{value: address(this).balance}(
+        uniswap.addLiquidityETH{value: address(this).balance}(
             address(sneeze), amt, 0, 0, address(0), block.timestamp);
 
         // 7. Sweep any dust ETH into the dispatcher to pay future periodic costs
@@ -81,4 +85,6 @@ contract SneezeMine is Periodic {
             periodicDispatcher().transfer(address(this).balance);
         }
     }
+
+    receive() external payable { }
 }

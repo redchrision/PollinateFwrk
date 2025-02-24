@@ -16,7 +16,7 @@ abstract contract Periodic is BasePeriodic {
     ) {
     }
 
-    function periodicDispatcher() override public pure returns (address payable) {
+    function periodicDispatcher() override virtual public view returns (address payable) {
         return payable(Generate.PERIODIC_DISPATCHER);
     }
 }

@@ -18,10 +18,6 @@ contract PeriodicDispatcher is IPeriodicDispatcher {
         self_balances[forWhom] += msg.value;
     }
 
-    receive() external payable {
-        addNectar(msg.sender);
-    }
-
     function dispatch(address periodicContract, uint minNectar) external {
         {
             uint _toPay = IPeriodic(periodicContract).nectarAvailable();
@@ -29,13 +25,20 @@ contract PeriodicDispatcher is IPeriodicDispatcher {
             minNectar = _toPay;
         }
 
+        uint bal = address(this).balance;
         IPeriodic(periodicContract).periodic();
         IPeriodic(periodicContract).postPeriodic();
+        bal = address(this).balance - bal + self_balances[periodicContract];
 
         {
-            require(self_balances[periodicContract] >= minNectar, "Not enough balance");
-            self_balances[periodicContract] -= minNectar;
+            require(bal >= minNectar, "Not enough balance");
+            bal -= minNectar;
             payable(msg.sender).transfer(minNectar);
+            self_balances[periodicContract] = bal;
         }
+
+        emit PeriodicPollinated(periodicContract, minNectar);
     }
+
+    receive() external payable { }
 }

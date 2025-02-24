@@ -17,3 +17,8 @@ node_modules
 ignition/deployments/chain-31337
 
 config.js
+config.yaml
+
+# Added by cargo
+
+/target
