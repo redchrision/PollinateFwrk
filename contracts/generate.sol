@@ -3,9 +3,9 @@ pragma solidity ^0.8.28;
 
 library Generate {
    address constant public UNISWAPV2_HELPER_ADDR =
-      0x1431614A5B6C091b8cB78dD84946CE09F7ffc237; // $$UniswapV2Helper::ADDRESS$$
+      0xF6F3552fa5a5601b44b0F4b62a3C47Fc7AD1E6AD; // $$UniswapV2Helper::ADDRESS$$
    address constant public PAYAFTER_DISPATCHER =
-      0x0A5D5350C01522DE37d64392E4af746899143BF9; // $$PayAfterDispatcher::ADDRESS$$
+      0xdCA2C12fD72710C5048cDE3Fe1223C4Da1865099; // $$PayAfterDispatcher::ADDRESS$$
    address constant public PERIODIC_DISPATCHER =
-      0xc87CFdc32244802C03e99870F719f9f92F34750A; // $$PeriodicDispatcher::ADDRESS$$
+      0x8B8b47d1637835eA002074FeBF0CDA85540F7432; // $$PeriodicDispatcher::ADDRESS$$
 }

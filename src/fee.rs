@@ -87,7 +87,7 @@ pub fn unpack_fee(packed: u32) -> (U256, u64) {
     (amt, time)
 }
 
-pub fn get_fees(mut buffer: impl Buf) -> Result<Vec<(U256, u64)>> {
+pub fn get_fees(mut buffer: impl Buf) -> Result<(u64, Vec<(U256, u64)>)> {
     if buffer.remaining() < 68+4 {
         bail!("Buffer overflow");
     }
@@ -102,7 +102,7 @@ pub fn get_fees(mut buffer: impl Buf) -> Result<Vec<(U256, u64)>> {
         let (fee_unpacked, time) = unpack_fee(fee);
         out.push((fee_unpacked, time + t0));
         if (fee >> 31) > 0 {
-            return Ok(out);
+            return Ok((t0, out));
         }
     }
 }

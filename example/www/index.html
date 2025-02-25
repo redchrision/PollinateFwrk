@@ -23,14 +23,22 @@
 <button id="connect-wallet">Connect Wallet</button>
 
 <div id="wallet-connected" style="display:none;">
-    <p>Your Sneeze Balance: <span id="sneeze-balance">_____</span></p>
+    <p>Your Address: <span id="address">Loading</span> (If it's the wrong one, change it in MetaMask)</p>
+    <p>Your Sneeze Balance: <span id="sneeze-balance">Loading</span></p>
+    <p>Your Electroneum Balance: <span id="electroneum-balance">Loading</span></p>
     <h2>Send Sneezes</h2>
     <form id="send-sneezes-form">
-        <label for="recipient-address">Address:</label>
-        <input type="text" id="recipient-address" placeholder="Enter Address"><br>
+        <span id="recipient-address">
+            <label>Address:</label>
+            <input type="text" placeholder="Enter Address"><br>
+            <span class="error-message"></span><br>
+        </span>
 
-        <label for="amount">Amount:</label>
-        <input type="text" id="amount" placeholder="Amount"><br>
+        <span id="amount">
+            <label>Amount:</label>
+            <input type="text" placeholder="Amount"><br>
+            <span class="error-message"></span><br>
+        </span>
 
         <label>Fee</label>
         <div>
@@ -47,12 +55,11 @@
         </div>
         <div>
             <label for="projected-gas">Projected Gas:</label>
-            <span id="projected-gas">0</span>
+            <span id="projected-gas">Loading</span>
         </div>
         <div>
-            <label for="base-fee">Base Fee:</label>
-            <span id="base-fee">0</span> 
-            <span id="base-fee-usd">($0.00)</span>
+            <label for="expected-fee">Base Fee Estimate:</label>
+            <span id="expected-fee">Loading</span> ETN
         </div>
 
         <div>
@@ -128,12 +135,12 @@
 
                     <tr class="fee-entry fee-inval">
                         <td colspan="3">Invalidate transaction if not confirmed after</td>
-                        <td class="invalidate-time">
+                        <td class="fee-time">
                             <input type="number" size="3" min="1" max="127">
                             <span class="error-message"></span>
                         </td>
                         <td>
-                            <select class="invalidate-tu">
+                            <select class="fee-tu">
                                 <option value="seconds">seconds</option>
                                 <option value="minutes">minutes</option>
                                 <option value="hours">hours</option>
@@ -159,6 +166,28 @@
 
         <button type="submit" id="send-transaction">Send Transaction</button>
     </form>
+
+    <div id="my-transactions" style="display:none;">
+    <h2>My Transactions</h2>
+    <table class="transaction-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Created</th>
+                <th>DataHash</th>
+                <th>Txid</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Waiting</td>
+                <td>33 Seconds</td>
+                <td>0x73ba50ae...</td>
+                <td>-</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
 </div>
 
 </body>

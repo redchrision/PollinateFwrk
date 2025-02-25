@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use alloy::hex;
 use alloy::primitives::{eip191_hash_message, Bytes, PrimitiveSignature};
 use alloy::primitives::keccak256;
 use alloy::{
@@ -8,14 +9,14 @@ use alloy::{
 };
 use alloy_sol_types::SolValue;
 use eyre::{bail, Result};
+use tokio::select;
+use tokio::sync::mpsc;
 
 use crate::general::{PayAfterTxn, PayAfterTxnStatus, PayAfterWaiting};
 use crate::util::vstr_from_error;
 use crate::{
-    abi::{
-        IPayAfterDispatcher,
-        PAYAFTER_DISPATCHER_ADDR,
-    },
+    abi::IPayAfterDispatcher,
+    generate::PAYAFTER_DISPATCHER_ADDR,
     config::Config, general::{
         gas_price,
         MyProvider,
@@ -23,14 +24,17 @@ use crate::{
     }, util::now_sec,
 };
 
-/// 0x4f4082f93978CCb77661f797cc36521Af262f6B8
+const TIME_SKEW: u64 = 2;
+
 /// This address substitutes msg.sender for the signer so for us, it's always invalid
-const ESTIMATE_GAS_ADDR: Address = Address::new(
-    *b"\x4f\x40\x82\xf9\x39\x78\xCC\xb7\x76\x61\xf7\x97\xcc\x36\x52\x1A\xf2\x62\xf6\xB8");
+const ESTIMATE_GAS_ADDR: Address =
+    Address::new(hex!("0x4f4082f93978CCb77661f797cc36521Af262f6B8"));
 
 pub struct Transaction {
     /// Transaction binary
     pub bin: Bytes,
+
+    pub create_time: u64,
 
     /// The hash used for signing the transaction
     pub data_hash: B256,
@@ -116,9 +120,10 @@ pub fn parse_transaction(config: &Config, bin: Bytes) -> Result<Transaction>
     }
 
     // A kill fee is shown as U256::MAX
-    let fees: Vec<(U256, u64)> = crate::fee::get_fees(&bin[..])?;
+    let (create_time, fees) = crate::fee::get_fees(&bin[..])?;
 
     Ok(Transaction{
+        create_time,
         bin,
         data_hash,
         signer,
@@ -188,11 +193,13 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<B256> {
 async fn accept_txn(srv: &Arc<Server>, txn: &Transaction, time_to_run: u64) -> Result<()> {
     let mut m = srv.m.lock().await;
     m.state.payafter.insert(txn.data_hash, PayAfterTxn{
+        create_time: txn.create_time,
         signer: txn.signer.clone(),
         data_hash: txn.data_hash,
         insert_time: now_sec(),
         status: PayAfterTxnStatus::Waiting(PayAfterWaiting { bin: txn.bin.clone(), time_to_run }),
     });
+    let _ = m.send_wakeup.send(()).await;
     Ok(())
 }
 
@@ -202,7 +209,7 @@ pub enum DiscoverTxnRes {
 }
 
 pub async fn discover_txn(srv: &Arc<Server>, mut txn: Transaction) -> Result<DiscoverTxnRes> {
-    let now = now_sec();
+    let now = now_sec() - TIME_SKEW;
     if txn.when_expires() <= now {
         bail!("Transaction has expired");
     }
@@ -212,56 +219,63 @@ pub async fn discover_txn(srv: &Arc<Server>, mut txn: Transaction) -> Result<Dis
     }
     let gas = match if txn.when_valid() < now {
         // Run a gas estimation directly since it's more exact
+        println!("Run estimate_gas on {}", txn.data_hash);
         estimate_gas(&txn, srv.prov.clone()).await
     } else {
+        println!("Run simulate_txn on {}", txn.data_hash);
         simulate_txn(&txn, srv.prov.clone(), txn.when_valid()).await
     } {
         Ok(gas) => gas,
         Err(e) => bail!("Transaction failed simulation: Error: {e}"),
     };
     txn.estimated_gas = Some(gas);
+    println!("Txn {} has estimated gas: {}", txn.data_hash, gas);
     let min_payout =
         U256::from(gas) * U256::from(gas_price(srv).await?) + srv.minimum_profit;
     let time_to_run = match txn.when_is_fee_at_least(min_payout) {
         Some(t) => t,
         None => bail!("Transaction never pays minimum fee"),
     };
+    println!("Expected min payoout for txn: {} is {}", txn.data_hash, min_payout);
     accept_txn(srv, &txn, time_to_run).await?;
     if time_to_run <= now {
+        println!("Running {}", txn.data_hash);
         let txid = run_txn(&txn, srv).await?;
         Ok(DiscoverTxnRes::SentTxid(txid))
     } else {
+        println!("Staging {} until {}", txn.data_hash, time_to_run);
         Ok(DiscoverTxnRes::WaitUntil(time_to_run))
     }
 }
 
-async fn get_ready_txn(srv: &Arc<Server>) -> Option<PayAfterTxn> {
-    let now = now_sec();
-    let mut m = srv.m.lock().await;
-    let mut to_remove = None;
-    for (id, p) in &m.state.payafter {
+async fn get_ready_txn(srv: &Arc<Server>) -> (Option<PayAfterTxn>, u64) {
+    let now = now_sec() - TIME_SKEW;
+    let m = srv.m.lock().await;
+    let mut shortest_time = u64::MAX;
+    for (_, p) in &m.state.payafter {
         if let PayAfterTxnStatus::Waiting(w) = &p.status {
             if w.time_to_run <= now {
-                to_remove = Some(*id);
-                break;
+                return (Some(p.clone()), w.time_to_run);
+            } else if w.time_to_run < shortest_time {
+                shortest_time = w.time_to_run;
             }
         };
     }
-    if let Some(to_remove) = to_remove {
-        m.state.payafter.remove(&to_remove)
-    } else {
-        None
-    }
+    (None, shortest_time)
 }
 
-pub async fn check_payafter_thread(srv: Arc<Server>) {
+pub async fn check_payafter_thread(srv: Arc<Server>, mut recv_wakeup: mpsc::Receiver<()>) {
     // Walk over our list of txns, if there's one which is ready to be run, re-discover it
     loop {
-        let Some(mut pat) = get_ready_txn(&srv).await else {
-            tokio::time::sleep(Duration::from_secs(30)).await;
+        let (pat, wait_until) = get_ready_txn(&srv).await;
+        let now = now_sec() - TIME_SKEW;
+        let Some(mut pat) = pat else {
+            select! {
+                _ = recv_wakeup.recv() => {},
+                _ = tokio::time::sleep(Duration::from_secs(wait_until - now)) => {},
+            }
             continue;
         };
-        let now = now_sec();
         let PayAfterTxnStatus::Waiting(w) = &pat.status else { panic!(); };
         let txn = match parse_transaction(&srv.cfg, w.bin.clone()) {
             Ok(txn) => txn,
@@ -274,6 +288,7 @@ pub async fn check_payafter_thread(srv: Arc<Server>) {
                 continue;
             }
         };
+        println!("PayAfter: (re)discover_txn {}", txn.data_hash);
         match discover_txn(&srv, txn).await {
             Ok(DiscoverTxnRes::SentTxid(txid)) => {
                 pat.status = PayAfterTxnStatus::Success(txid);
@@ -334,6 +349,7 @@ mod tests {
                 (U256::from(200), 2000),
                 (U256::from(300), 3000),
             ],
+            create_time: 0,
             bin: [].into(),
             data_hash: B256::ZERO,
             signer: Address::ZERO,

@@ -7,7 +7,8 @@ use alloy::{
 use eyre::{Context,Result};
 
 use crate::{
-    abi::{IPeriodic, IPeriodicDispatcher, PERIODIC_DISPATCHER_ADDR},
+    abi::{IPeriodic, IPeriodicDispatcher},
+    generate::PERIODIC_DISPATCHER_ADDR,
     general::{
         gas_price, Server, StatePeriodic
     }, util::now_sec,

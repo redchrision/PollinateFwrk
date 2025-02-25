@@ -9,12 +9,47 @@ const {
     getUniswapV2Helper,
 } = require('../dist/pollinate').PayAfter;
 
-const SNEEZE = '0xacAB8A2C6E970AE050C72737F4D9e3F4b090e3a8';
-const UNISWAP_HELPER = '0x1431614A5B6C091b8cB78dD84946CE09F7ffc237';
+const SNEEZE = '0x9E5Ca6fdf143616b065e20d5B8ca4127e7d43CC6';
+const UNISWAP_HELPER = '0xF6F3552fa5a5601b44b0F4b62a3C47Fc7AD1E6AD';
 
 // Send 1 SNZ to the pollinator address
 const SEND_TO = '0xd62320bD3359A89A7150F4aFF108D4916E55e26c';
-const SEND_AMT = '1';
+const SEND_AMT = '0.01';
+
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function postPayAfter(txn) {
+    try {
+        const response = await fetch('http://127.0.0.1:8080/api/v1/payafter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ txn }),
+        });
+        const result = await response.json();
+        console.log('PayAfter Response:', result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function getAddressPayAfters(address) {
+    const url = `http://127.0.0.1:8080/api/v1/address-payafters/${address}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET' // Default, but explicit for clarity
+        });
+        const result = await response.json();
+        console.log('Your PayAfters:', result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
 
 async function main() {
     const [user] = await ethers.getSigners();
@@ -25,6 +60,12 @@ async function main() {
 
     const sneeze = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20', SNEEZE);
     const uniswapV2Helper = await getUniswapV2Helper(user.provider);
+
+    const userSneezes = await sneeze.balanceOf(await user.getAddress());
+    console.log(`Caller has ${ethers.formatEther(userSneezes)} sneeze`);
+    if (userSneezes < ethers.parseEther(SEND_AMT)) {
+        throw new Error("Not enough balance to send");
+    }
 
     // Setup the calls
     const calls = [];
@@ -49,8 +90,9 @@ async function main() {
     // Build the fee policy
     const fees = [
         makeFee(baseFeePerGas*gas),
-        makeFee(feeData.maxFeePerGas*gas).after(1).minute,
-        makeFee(feeData.maxFeePerGas*gas*3n/2n).after(4).minutes,
+        makeFee(feeData.maxFeePerGas*gas).after(10).seconds,
+        makeFee(feeData.maxFeePerGas*gas*3n/2n).after(30).seconds,
+        makeFee(feeData.maxFeePerGas*gas*4n).after(5).minutes,
         makeInvalid().after(10).minutes,
     ];
 
@@ -62,18 +104,11 @@ async function main() {
 
     console.log(signed);
 
-    // const periodic = await ethers.getContractAt('IPeriodic', '0x4530F744Ca8562619EF75C70C9f88Df7533b2b95');
-    // const tx = await periodic.periodic({ gasLimit: 1000000 });
-    // console.log(tx);
-    // const x = await tx.wait();
-    // console.log(x);
+    await postPayAfter(signed);
 
-    // const dispatcher = await ethers.getContractAt('IPeriodicDispatcher', '0xc87CFdc32244802C03e99870F719f9f92F34750A');
-    // const gas = await dispatcher.dispatch.estimateGas(SNEEZE_MINE, 0);
-    // console.log('Gas needed to dispatch:', gas);
-    // const tx = await dispatcher.dispatch(SNEEZE_MINE, 0, { gasLimit: gas });
-    // console.log(tx);
-    // const recp = await tx.wait();
-    // console.log(recp);
+    for (;;) {
+        await getAddressPayAfters(user.address);
+        await sleep(3000);
+    }
 }
 main();

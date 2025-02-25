@@ -12,7 +12,7 @@ use alloy::{
 };
 use eyre::{Context, Result};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 use crate::config::Config;
 
@@ -44,24 +44,25 @@ pub struct StatePeriodic {
     pub nectar_growth_per_sec: U256,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PayAfterWaiting {
     pub bin: Bytes,
     pub time_to_run: u64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum PayAfterTxnStatus {
     Waiting(PayAfterWaiting),
     Error(Vec<String>),
     Success(B256),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PayAfterTxn {
     pub signer: Address,
     pub data_hash: B256,
     pub insert_time: u64,
+    pub create_time: u64,
     pub status: PayAfterTxnStatus,
 }
 
@@ -75,6 +76,7 @@ pub struct ServerMut {
     pub state: State,
     pub gas_price: u128,
     pub gas_price_last_checked: u64,
+    pub send_wakeup: mpsc::Sender<()>,
 }
 
 pub struct Server {

@@ -21,7 +21,7 @@ use alloy::{
 };
 use eyre::Result;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 use warp::Filter;
 
 use crate::{
@@ -50,6 +50,7 @@ struct PayAfterPost {
 
 #[derive(Serialize, Deserialize, Default)]
 struct PayAfterRes {
+    create_time: Option<u64>,
     txid: Option<B256>, // fully succeeded
     wait_until: Option<u64>, // accepted, will post later
     data_hash: Option<B256>,
@@ -71,10 +72,12 @@ async fn api_payafter(
         }
     };
     let data_hash = txn.data_hash.clone();
+    let create_time = Some(txn.create_time);
     reply_with(&match discover_txn(&srv, txn).await {
         Ok(x) => {
             let mut par = PayAfterRes{
                 data_hash: Some(data_hash),
+                create_time,
                 ..Default::default()
             };
             match x {
@@ -91,6 +94,7 @@ async fn api_payafter(
         Err(e) => {
             PayAfterRes{
                 data_hash: Some(data_hash),
+                create_time,
                 error: Some(vstr_from_error(e)),
                 ..Default::default()
             }
@@ -106,6 +110,7 @@ async fn api_address_payafters(
     let v = m.state.payafter.iter()
         .filter(|(_, pa)|pa.signer == addr)
         .map(|(id, pa)|PayAfterRes{
+            create_time: Some(pa.create_time),
             txid: if let PayAfterTxnStatus::Success(txid) = &pa.status {
                 Some(*txid)
             } else {
@@ -173,11 +178,14 @@ pub async fn serve(config_path: PathBuf) -> Result<()> {
     let bal = prov.get_balance(my_addr.clone()).await?;
     println!("Pollinator balance: {}", format_ether(bal));
 
+    let (send_wakeup, recv_wakeup) = mpsc::channel(8);
+
     let srv = Arc::new(Server{
         m: Mutex::new(ServerMut {
             state,
             gas_price: 0,
             gas_price_last_checked: 0,
+            send_wakeup,
         }),
         minimum_profit,
         cfg,
@@ -188,7 +196,7 @@ pub async fn serve(config_path: PathBuf) -> Result<()> {
 
     tokio::task::spawn(check_periodics_thread(Arc::clone(&srv)));
 
-    tokio::task::spawn(check_payafter_thread(Arc::clone(&srv)));
+    tokio::task::spawn(check_payafter_thread(Arc::clone(&srv), recv_wakeup));
 
     let api = {
         let server = Arc::clone(&srv);
@@ -198,6 +206,11 @@ pub async fn serve(config_path: PathBuf) -> Result<()> {
             .and(warp::any().map(move || Arc::clone(&server)))
             .and_then(api_payafter)
     };
+    let api = api.or({
+        warp::path!("api" / "v1" / "payafter")
+            .and(warp::options())
+            .and_then(||async { reply_with(&serde_json::Value::Null) })
+    });
 
     let api = api.or({
         let server = Arc::clone(&srv);

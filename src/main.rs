@@ -11,6 +11,7 @@ mod periodic;
 mod general;
 mod fee;
 mod util;
+mod generate;
 
 #[derive(Parser)]
 #[command(name = "pollinated")]
@@ -44,7 +45,7 @@ async fn main() -> Result<()> {
             println!(r#"
 # List of Periodic smart contracts which we should be watching
 periodic_contracts:
-  - "0x0A68bC9f0E8e6daEae2B4FDd1a67E7679183aFe6" # SneezeMine
+  - "0x6f0538Dd18F1A6162aC971539030fc949190BE3A" # SneezeMine
 
 # Minimum amount of profit in whole units of the base token (200k GWEI)
 minimum_profit: 0.0002

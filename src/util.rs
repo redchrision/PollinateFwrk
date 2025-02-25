@@ -29,6 +29,9 @@ pub fn reply_with<T: Serialize>(data: &T) -> Result<Box<dyn warp::Reply>, Infall
     Ok(Box::new(
         warp::http::response::Builder::new()
             .header("Content-Type", "application/json")
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            .header("Access-Control-Allow-Headers", "Content-Type")
             .body(data),
     ))
 }

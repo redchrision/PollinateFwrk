@@ -96,7 +96,11 @@ const feeToBinary = (f: FeeEntry_t, isLast: boolean): bigint => {
         packedFee = (feeExp << 13) | Number(fee);
     }
 
-    const packedTime = (f.timeUnit << 7) | f.feeTime;
+    let packedTime = (f.timeUnit << 7) | f.feeTime;
+    if (f.feeTime === 0) {
+        // Cannonical representation of zero
+        packedTime = 0;
+    }
 
     const PACKED_FEE_WIDTH = 13 + 8;
 
@@ -159,7 +163,7 @@ export const makeFee = (amt: bigint): Readonly<InitialFeeTime_t> => {
         amtRounded: () => amtRounded(amt),
         after: (feeTimeInput: number) => {
             feeTime = feeTimeInput;
-            if (feeTime < 1 || feeTime > 127 || !Number.isInteger(feeTime)) {
+            if (feeTime < 0 || feeTime > 127 || !Number.isInteger(feeTime)) {
                 throw new Error("makeFee().after(): feeTime must be an integer between 1 and 127, got: " + feeTime);
             }
             return Object.freeze({

@@ -5,18 +5,22 @@ const config = require('../config');
 const GENERATE = [
     './contracts/generate.sol',
     './lib/generate.ts',
+    './src/generate.rs',
 ]
 
 const SPECS = {
-    PeriodicDispatcher: ["0xc87CFdc32244802C03e99870F719f9f92F34750A",true],
-    PayAfterDispatcher: ["0x0A5D5350C01522DE37d64392E4af746899143BF9",true],
-    UniswapV2Helper: ["0x1431614A5B6C091b8cB78dD84946CE09F7ffc237",true],
-    Sneeze: ["0xacAB8A2C6E970AE050C72737F4D9e3F4b090e3a8",true],
-    SneezeMine: ["0x4530F744Ca8562619EF75C70C9f88Df7533b2b95",true],
+    PeriodicDispatcher: ["0x8B8b47d1637835eA002074FeBF0CDA85540F7432",true],
+    PayAfterDispatcher: ["0xdCA2C12fD72710C5048cDE3Fe1223C4Da1865099",true],
+    UniswapV2Helper: ["0xF6F3552fa5a5601b44b0F4b62a3C47Fc7AD1E6AD",true],
+
+    Sneeze: ["0x9E5Ca6fdf143616b065e20d5B8ca4127e7d43CC6",true],
+    SneezeMine: ["0x6f0538Dd18F1A6162aC971539030fc949190BE3A",true],
 };
 let LP_TOKEN = '';
-LP_TOKEN = "0x99802D0b04D007794833272B45Cabd975e837c32";
+LP_TOKEN = "0x480d752b4e3948Be7234117802A1eABC199f6757";
 
+
+let hasDeployed = false;
 async function deployOne0(name, args) {
     if (!ethers.isAddress(SPECS[name][0])) {
         console.log(`Deploying contract ${name} with ${JSON.stringify(args)}`);
@@ -24,6 +28,7 @@ async function deployOne0(name, args) {
         await dp.waitForDeployment();
         SPECS[name][0] = await dp.getAddress();
         console.log(`${name} has address ${SPECS[name][0]}`);
+        hasDeployed = true;
     }
     if (!SPECS[name][1]) {
         console.log(`Uploading ${name} for verification`);
@@ -127,6 +132,10 @@ async function main() {
     const padAddr = await deployOne("PayAfterDispatcher", []);
     await deployOne("UniswapV2Helper", [ config.uniswapV2Router, padAddr ]);
     await template();
+    if (hasDeployed) {
+        console.log("Generated files updated, please re-run deploy");
+        return;
+    }
     const sneezeAddr = await deployOne("Sneeze", []);
     const sneeze = await ethers.getContractAt('Sneeze', sneezeAddr);
     if (!LP_TOKEN) {

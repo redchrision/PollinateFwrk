@@ -30,9 +30,9 @@ contract SneezeMine is Periodic {
     ) Periodic(
         60 * 10,                       // Target cycle time is 10 minutes
         100,                           // Retarget every 100 cycles
-        331712 * GEWI * 2              // Initial gas estimation from testing shows 331712 gas,
-                                       // Gas cost from block explorer is 1 GWEI,
-                                       // double it for safety margin.
+        331712 * GEWI * 2              // Initial gas estimation from testing shows
+                                       // 331712 gas. Gas cost from block explorer
+                                       // is 1 GWEI, double it for safety margin.
     ) {
         sneeze = _sneeze;
         uniswap = _uniswap;

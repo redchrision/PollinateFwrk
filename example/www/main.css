@@ -42,6 +42,10 @@ button:hover {
     background-color: #2980b9; /* Darker blue on hover */
 }
 
+button:disabled {
+    background-color: #b1c5d3;
+}
+
 /* Form elements */
 input[type="text"], input[type="number"], select {
     width: 100%;
@@ -75,4 +79,18 @@ input[type="radio"], input[type="checkbox"] {
 
 .error-message {
     color: red;
+}
+
+.transaction-table  {
+    border-collapse: collapse;
+    /* width: 50%; */
+    /* margin: 20px auto; */
+}
+.transaction-table th, .transaction-table td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: left;
+}
+.transaction-table th {
+    background-color: #f2f2f2;
 }
