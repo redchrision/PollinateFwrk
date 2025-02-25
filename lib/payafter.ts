@@ -120,6 +120,7 @@ const feeTimetimeSeconds = (fee: FeeEntry_t): bigint => {
         60*60*24*7,
         60*60*24*30,
         60*60*24*365,
+        10,
     ];
 
     if (fee.timeUnit < 0 || fee.timeUnit >= FTM.length) {

@@ -31,7 +31,7 @@ contract ExamplePeriodic is Periodic {
     constructor() Periodic(
         60 * 10,                       // _targetSecondsPerCycle
         100,                           // _cyclesPerRetarget
-        1 * 10**18 / uint(2726) / 10   // _initialPayPerPeriod
+        50000 * GEWI * 2               // _initialPayPerPeriod
     ) { }
     function periodic() external override {
         counter++;
@@ -53,6 +53,10 @@ However, each retarget event will only (at maximum) halve the nectar payout rate
 initial payout is *too* generous, it will take a number of retargets before it has cut back to
 the right amount.
 
+In the example, we estimate the gas consumption of
+`PeriodicDispatcher.dispatch(ourContractAddress)`, multiply that by the gas price, and then
+multiply by 2 for a safety margin.
+
 Then you need to implement the `periodic()` function. This function must tollerate being
 called by anyone at any time. It may be called more often or less often than the specified
 period.
@@ -72,7 +76,7 @@ If you are writing a contract which should sell its own tokens in order to fund 
 function, you can do this as well. An example is given in
 `./contracts/sneezetoken/SneezeMine.sol`. Inside of the `periodic()` function we call
 `nectarShortfall()` which is provided by `Periodic`. The `nectarShortfall()` function
-tells is how much we need to send to the periodic dispatcher in order to fund the transaction.
+tells us how much we need to send to the periodic dispatcher in order to fund the transaction.
 
 If the periodic is already well funded, as in out above example with the developer calling
 `addNectar()`, `nectarShortfall()` will return zero, but if we are out of funds,
@@ -159,13 +163,14 @@ Inside of `./lib/PayAfter.js` there are the following functions:
 async function prepareCall(contract: ethers.Contract, funcName: string, args: any[]): Promise<string>;
 async function estimateGas(
     provider: ethers.Provider,
-    signerAddress: string,
     calls: string[],
     fees: number | Object[]
 ): Promise<bigint>;
 function makeFee(amount: bigint): Object;
 function makeInvalid(): Object;
 async function signCalls(signer: ethers.Signer, calls: string, fees: Object[]): Promise<string>;
+function getDispatcher(provider: ethers.Provider, address?: string): ethers.Contract;
+function getUniswapV2Helper(provider: ethers.Provider, address?: string): ethers.Contract;
 ```
 
 ##### prepareCall()
@@ -181,23 +186,21 @@ Example:
 
 ```javascript
 const calls = [
-    await prepareCall(myErc20Token, "transfer", ['0x1234addressofyourfriend', ethers.toWei('100')]),
+    await prepareCall(myErc20Token, "transfer", ['0x1234addressofyourfriend', ethers.parseEther('1')]),
 ];
 ```
 
 ##### estimateGas()
 Once you have prepared your list of function calls, you will want to estimate the gas requirement for
 those functions. For this you use the `estimateGas()` function call. Because each fee policy entry
-adds about 5,000 gas cost, you should know in advance how many fee policy entries you will have, but
-you do not need to know what they are yet.
+adds about 5,000 gas cost, you should know in advance how many fee policy entries you plan to have,
+but you do not need to know what they are yet.
 
 The arguments to `estimateGas()` are as follows:
-* `provider`: The `ethers.js` provider object, you do not need a signer.
-* `signerAddress`: The address of the signer, in order to simulate how the transaction will actually
-execute, `estimateGas()` needs to know who will be the signer.
+* `signer`: The `ethers.js` signer object, you will not be asked to sign anything.
 * `calls`: An array of calls as made by `prepareCall()`
 * `fees`: This can be either the number of Fee Entries which you plan to use, or it can be an array of
-the actual Fee Entries.
+the actual Fee Entries if you know them already.
 
 Example:
 
@@ -206,7 +209,7 @@ const calls = [
     await prepareCall(mockCallable, "callMeMaybe", [123]),
     await prepareCall(mockCallable, "callMeMaybe", [456]),
 ];
-console.log('Gas: ', await estimateGas(ethers.provider, await otherAccount.getAddress(), calls, 3));
+console.log('Gas: ', await estimateGas(owner, calls, 3));
 ```
 
 ##### makeFee()
@@ -218,7 +221,7 @@ To set the fee to 100 Wei after the transaction has spend 3 minutes without bein
 would do the following:
 
 ```javascript
-makeFee(100n).after(3).minutes
+makeFee(BigInt(100)).after(3).minutes
 ```
 
 The valid time units are:
@@ -231,8 +234,8 @@ The valid time units are:
 * `year` / `years`
 
 The space-saving binary representation of fees does not allow you to specify a timespan of more
-than 127 time units. So for example `.after(128).seconds` is invalid, you must use `.after(2).minutes`
-instead.
+than 127 time units. So for example `.after(128).seconds` is invalid and you must use
+`.after(2).minutes` instead.
 
 If `makeFee()` is used without a time specification, it is interpreted as "0 seconds since creation",
 for example:
@@ -261,20 +264,20 @@ const fees = [
 If your transaction *never* gets confirmed on chain, you can use a special Fee Entry to invalidate
 it entirely. This is really good practice for two reasons:
 
-1. If a transaction does not clear in a timely mannor you will probably need to make another one,
+1. If a transaction does not clear in a timely manner you will probably need to make another one,
 and then if the original transaction finally lands weeks or months later, someone might be getting
 paid twice what they expected to.
-2. To prevent transactions being confirmed more than once, the PayAfter dispatcher remembers
-every transaction that it ever performed. This adds 20,000 gas to each transaction. However, once a
-transaction is provably invalid, it can be removed from storage which brings a 15,000 gas refund.
-Identification and removal of expired entries is handled entirely by the pollinators, but they are
-only able to remove an entry while performing another transaction by the same signer, so adding a
-`makeInvalid()` to your transaction will make your future transactions cheaper for pollinators to
-submit, making them get executed faster and at a lower fee.
+2. To prevent transactions being confirmed more than once, the `PayAfterDispatcher` remembers
+every transaction that it ever performed. Adding memory of a transaction adds 20,000 gas to each
+transaction. However, once a transaction is provably invalid, it can be removed from storage
+bringing a 15,000 gas refund. Identification and removal of expired entries is handled entirely by
+the pollinators, but they are only able to remove an entry while performing another transaction by
+the *same* signer, so adding a `makeInvalid()` to your transaction will make your future
+transactions cheaper for pollinators to submit, making them get executed faster and at a lower fee.
 
 ```javascript
 // Offer to pay 10 Wei, but after 2 minutes increase that to 100 Wei.
-// If no pollinator submits the transaction for a day, make it invalid.
+// If no pollinator submits the transaction for 10 minutes, make it invalid.
 const fees = [
     makeFee(10n),
     makeFee(100n).after(2).minutes,
@@ -285,7 +288,7 @@ const fees = [
 ##### signCalls()
 Once you have structured your transaction and fee policy, you can now sign it. This function call
 will open the user's wallet and ask them to sign binary data. To sign, you need the signer object,
-the list of call, and the completed fee policy. The output of this function is a hex binary string
+the list of calls, and the completed fee policy. The output of this function is a hex binary string
 that can be sent to the pollinators.
 
 Example:
@@ -310,8 +313,9 @@ but we didn't say where the coins would come from. Fees are funded by sending co
 any remaining to the signer's address.
 
 So in order for your PayAfter transaction to be valid, it must send enough coins to the
-`PayAfterDispatcher` so that the dispatcher can pay the fee. How you do this is technically up to
-you, but for `ERC20PayAfter` users, there is a `UniswapV2Helper` which can fund your fee by selling
+`PayAfterDispatcher` so that the dispatcher can pay the fee. You can do this with any contract that
+calls `PayAfterDispatcher.getRequiredFee()` and then pays that amount of base token to the
+dispatcher. For `ERC20PayAfter` users, there is a `UniswapV2Helper` which does this by by selling
 some of your tokens.
 
 ```javascript
@@ -333,42 +337,254 @@ calls.push(await prepareCall(uniswapV2Helper, "coverFee", [await myToken.getAddr
 To structure a PayAfter transaction, you will generally want to:
 1. Set up the calls
 2. Estimate gas & access the current gas price to establish a base fee
-3. Create the fee policy
-4. Re-run estimate gas to check that the transaction is valid with fees
-5. Sign and submit the transaction
+3. Create your fee policy
+4. Sign and submit the transaction
 
 ```javascript
 // Expecting you to have `ethers`, `signer`, and `provider`.
-const { prepareCall, getUniswapV2Helper } = require('pollinate').PayAfter;
+const {
+    getUniswapV2Helper,
+    prepareCall,
+    estimateGas,
+    makeFee,
+    makeInvalid,
+    signCalls
+} = require('pollinate').PayAfter;
 const sendToAddress = '0x0000000000000000000000000000000000000000'; // TODO: Fill in a real address
-const sendAmount = ethers.toWei('100'); // number of tokens
+const sendAmount = ethers.parseEther('100'); // number of tokens
 const myToken = '0x0000000000000000000000000000000000000000'; // TODO: Fill in a real token address
 const calls = [];
-calls.push(await prepareCall(myToken, "transfer", [sendToAddress, sendAmount]));
-
 const uniswapV2Helper = getUniswapV2Helper(provider);
 
+calls.push(await prepareCall(myToken, "transfer", [sendToAddress, sendAmount]));
 const allow = myToken.allowance(await signer.getAddress(), await uniswapV2Helper.getAddress());
 if (allow < ethers.MaxUint256) {
+    // If we've already approved the uniswapV2Helper, we can skip this and save gas
     calls.push(await prepareCall(myToken, "approve", [await uniswapV2Helper.getAddress(), ethers.MaxUint256]));
 }
-
 calls.push(await prepareCall(uniswapV2Helper, "coverFee", [await myToken.getAddress()]));
 
 const gas = await estimateGas(ethers.provider, await signer.getAddress(), calls, 5);
-const gasPrice = await provider.getGasPrice();
-const baseFee = gas * gasPrice;
+const feeData = await ethers.provider.getFeeData();
+const baseFeePerGas = feeData.maxFeePerGas - feeData.maxPriorityFeePerGas;
 
 const fees = [
-    makeFee(baseFee),
-    makeFee(baseFee * 3n / 2n).after(1).minute,
-    makeFee(baseFee * 2n).after(3).minutes,
-    makeFee(baseFee * 3n).after(6).minutes,
+    makeFee(baseFeePerGas*gas),
+    makeFee(feeData.maxFeePerGas*gas).after(10).seconds,
+    makeFee(feeData.maxFeePerGas*gas*3n/2n).after(30).seconds,
+    makeFee(feeData.maxFeePerGas*gas*4n).after(5).minutes,
     makeInvalid().after(10).minutes,
 ];
 
-// Re-run estimateGas just to confirm that the transaction doesn't fail when it tries to pay its fees
-await estimateGas(ethers.provider, await signer.getAddress(), calls, fees);
-
 const signedData = await signCalls(signer, calls, fees);
 ```
+
+### Periodic Fee Policy Specifics
+The Fee Entries created by `makeFee()` have a few additional methods that may
+be useful. A Fee Entry is packed in 32 bits of data. To do this, the fee
+amount is rounded and represented similarly to a floating-point number. The
+time specification is *not* rounded, but the times that you can specify are
+restricted to 1-127 time-units.
+
+```javascript
+///  0               1               2               3
+///  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
+/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/// |L| TU  |   Fee Time  |    Fee Exp    |        Fee Base         |
+/// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+///
+/// * L           -> 1 if this is the last fee entry
+/// * TU          -> Time Unit (second, minute, hour, day, week, month, year, tensec)
+/// * Fee Time    -> After this number of time units, this fee will apply
+/// * Fee Exp     -> Fee amount exponent
+/// * Fee Base    -> Fee amount base (fee = base << exponent)
+```
+
+### timeSeconds()
+Calling `fee.timeSeconds()` will give you the number of seconds that this
+time specification. Remember fee times are based on the time the transaction
+was signed.
+
+### amtRounded()
+This function gives you the precise amount of the specified fee (rounded to
+fit in 13 bits). The following example shows that 1 ETN (`10 ** 18`) is not a
+round number in binary, so it is rounded.
+
+```javascript
+let hh = require('hardhat');
+let p = require('./dist/pollinate.js');
+hh.ethers.formatEther(p.PayAfter.makeFee(hh.ethers.parseEther('1')).amtRounded())
+```
+
+This prints `0.99993985476460544`.
+
+### toBinary(last: boolean)
+This outputs the binary representation of a fee entry, you probably won't
+need it but it might be useful for understanding how fees work.
+
+```javascript
+> p.PayAfter.makeFee(hh.ethers.parseEther('1')).toBinary(false).toString('2').padStart(32,'0')
+'00000000000001011111101111000001'
+> p.PayAfter.makeFee(hh.ethers.parseEther('1')).toBinary(true).toString('2').padStart(32,'0')
+'10000000000001011111101111000001'
+```
+
+## Pollinator API
+The pollinator daemon has an HTTP API that allows you to submit a PayAfter and allows you to
+track your PayAfters given your address.
+
+### PayAfter Transaction Lifecycle
+
+When a PayAfter transaction is submitted to a pollinator, it will either fail it immediately
+with an error, try to execute it (send it to the chain) immediately, or it will hold it
+waiting for the fee rate to become more advantageous.
+
+```
+Submitted --------> Error
+   |   |             ^
+   |   |             |
+   |   |             |
+   |   +--------> Waiting
+   |                 |
+   |                 |
+   |                 v
+   +-----------> Executed
+```
+
+### POST /api/v1/payafter
+#### Request
+
+```js
+{
+    // The hex encoded transaction output from signCalls
+    "txn": "0x01020304..."
+}
+```
+
+#### Response1, parse error
+
+```js
+{
+    "error": [
+        "Array of strings",
+        "Representing the cause of the error"
+    ]
+}
+```
+
+#### Response 2, transaction error
+
+```js
+{
+    // The signature hash of the signed calls
+    "data_hash": "0x00010203..",
+    // The creation time of the provided signed calls, seconds since the epoch
+    "create_time": 12345678,
+    "error": [
+        "Array of strings",
+        "Representing the cause of the error"
+    ]
+}
+```
+
+#### Response 3, waiting
+This response means the pollinator is waiting until the fee rate goes up
+to an amount that is enough to be worth transacting.
+
+```js
+{
+    // The signature hash of the signed calls
+    "data_hash": "0x00010203..",
+    // The creation time of the provided signed calls, seconds since the epoch
+    "create_time": 12345678,
+    // When the pollinator will revisit the transaction, seconds since the epoch
+    "wait_until": 9012345,
+}
+```
+
+#### Response 4, executed
+This response means the pollinator decided to submit the transaction
+immediately.
+
+```js
+{
+    // The signature hash of the signed calls
+    "data_hash": "0x00010203..",
+    // The creation time of the provided signed calls, seconds since the epoch
+    "create_time": 12345678,
+    // The on-chain transaction ID
+    "txid": "0x00010203..",
+}
+```
+
+### GET /api/v1/address-payafters/{address}
+Find out what PayAfter transactions exist in the pollinator's system.
+
+#### Response
+The response is an array of transactions in any of the above mentioned except for
+"early" errors which are always returned synchronously. Once the pollinator has
+confirmed once that the transaction is "real" and it may be paid to run it, it
+will be stored and then show up in this list.
+
+```js
+[
+    // A transaction which experienced a transacting error
+    {
+        // The signature hash of the signed calls
+        "data_hash": "0x00010203..",
+        // The creation time of the provided signed calls, seconds since the epoch
+        "create_time": 12345678,
+        "error": [
+            "Array of strings",
+            "Representing the cause of the error"
+        ]
+    },
+
+    // A transaction which is waiting
+    {
+        // The signature hash of the signed calls
+        "data_hash": "0x00010203..",
+        // The creation time of the provided signed calls, seconds since the epoch
+        "create_time": 12345678,
+        // When the pollinator will revisit the transaction, seconds since the epoch
+        "wait_until": 9012345,
+    },
+
+    // A transaction which has been submitted
+    {
+        // The signature hash of the signed calls
+        "data_hash": "0x00010203..",
+        // The creation time of the provided signed calls, seconds since the epoch
+        "create_time": 12345678,
+        // The on-chain transaction ID
+        "txid": "0x00010203..",
+    }
+]
+```
+
+## Running a pollinator
+To run a pollinator, you must build the pollinator daemon.
+
+1. Make sure you have Rust installed
+        `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+2. Build the pollinator code
+        `cargo build --release`
+3. Create a new configuration file
+        `./target/release/pollinate genconf > ./config.yaml`
+4. Edit the configuration file and set the RPC server to a private high throughput RPC
+5. Launch the pollinator
+        `./target/release/pollinate serve ./config.yaml`
+
+When you launch the pollinator, you will be prompted for a passphrase, you can use
+anything, but the passphrase you use + the seed words in the config file determine
+your pollinator's ETN address / key.
+
+Once your pollinator is alive, it will print it's address, send it some ETN so that
+it can pay fees and it's off and running!
+
+## Running the example Sneeze Wallet
+1. Start a pollinator on your local machine on port 8080 (this is hardcoded in
+the example `main.js`)
+2. Launch the mini-server
+    `node ./example/serve.js`
+3. Navigate your browser to http://127.0.0.1:3000
