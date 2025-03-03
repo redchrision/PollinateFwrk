@@ -1,6 +1,6 @@
 import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
 
-const POLLINATOR = 'http://127.0.0.1:8080';
+const POLLINATOR = 'https://pollinate.cjdns.fr';
 const SNEEZE = '0x9E5Ca6fdf143616b065e20d5B8ca4127e7d43CC6';
 
 function log(msg) {
