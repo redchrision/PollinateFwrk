@@ -11,184 +11,204 @@
 </head>
 <body>
 
-<h1 id="sneeze-wallet-title">Sneeze Wallet</h1>
-
-<p>
-    Sneeze Token is an example for demonstrating the capabilities of the Pollinate framework.
-    Using the Sneeze Wallet, you can send Sneeze Tokens and pay the fees in the native Sneeze currency.
-    This is done by converting your transactions into Pollinate messages and sending them to the
-    Pollinate network.
-</p>
-
-<button id="connect-wallet">Connect Wallet</button>
-
-<div id="wallet-connected" style="display:none;">
-    <p>Your Address: <span id="address">Loading</span> (If it's the wrong one, change it in MetaMask)</p>
-    <p>Your Sneeze Balance: <span id="sneeze-balance">Loading</span></p>
-    <p>Your Electroneum Balance: <span id="electroneum-balance">Loading</span></p>
-    <h2>Send Sneezes</h2>
-    <form id="send-sneezes-form">
-        <span id="recipient-address">
-            <label>Address:</label>
-            <input type="text" placeholder="Enter Address"><br>
-            <span class="error-message"></span><br>
-        </span>
-
-        <span id="amount">
-            <label>Amount:</label>
-            <input type="text" placeholder="Amount"><br>
-            <span class="error-message"></span><br>
-        </span>
-
-        <label>Fee</label>
-        <div>
-            <input type="radio" id="fee-low" name="fee" value="low">
-            <label for="fee-low">Low</label>
-        </div>
-        <div>
-            <input type="radio" id="fee-normal" name="fee" value="normal" checked>
-            <label for="fee-normal">Normal</label>
-        </div>
-        <div>
-            <input type="radio" id="fee-high" name="fee" value="high">
-            <label for="fee-high">High</label>
-        </div>
-        <div>
-            <label for="projected-gas">Projected Gas:</label>
-            <span id="projected-gas">Loading</span>
-        </div>
-        <div>
-            <label for="expected-fee">Base Fee Estimate:</label>
-            <span id="expected-fee">Loading</span> ETN
+<!-- Header Section with Flower & Bee -->
+<header class="header">
+    <div class="flower-container">
+        <div class="flower">
+            <div class="stem"></div>
+            <div class="center"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
+            <div class="pollen"></div>
         </div>
 
-        <div>
-            <input type="checkbox" id="advanced-options-chk">
-            <label for="advanced-options-chk">Advanced Options</label>
+        <div class="bee">
+            <div class="body"></div>
+            <div class="head">
+                <div class="eye"></div>
+            </div>
+            <div class="wing left"></div>
+            <div class="wing right"></div>
+            <div class="antenna left"></div>
+            <div class="antenna right"></div>
         </div>
+    </div>
+</header>
 
-        <div id="advanced-options" style="display: none;">
-            <table>
+<!-- Main Content Section -->
+<main>
+    <h1 id="sneeze-wallet-title">Sneeze Wallet</h1>
+
+    <p>
+        Sneeze Token is an example for demonstrating the capabilities of the Pollinate framework.
+        Using the Sneeze Wallet, you can send Sneeze Tokens and pay the fees in the native Sneeze currency.
+        This is done by converting your transactions into Pollinate messages and sending them to the
+        Pollinate network.
+    </p>
+
+    <button id="connect-wallet">Connect Wallet</button>
+
+    <div id="wallet-connected" style="display:none;">
+        <p>Your Address: <span id="address">Loading</span> (If it's the wrong one, change it in MetaMask)</p>
+        <p>Your Sneeze Balance: <span id="sneeze-balance">Loading</span></p>
+        <p>Your Electroneum Balance: <span id="electroneum-balance">Loading</span></p>
+
+        <h2>Send Sneezes</h2>
+        <form id="send-sneezes-form">
+            <span id="recipient-address">
+                <label>Address:</label>
+                <input type="text" placeholder="Enter Address"><br>
+                <span class="error-message"></span><br>
+            </span>
+
+            <span id="amount">
+                <label>Amount:</label>
+                <input type="text" placeholder="Amount"><br>
+                <span class="error-message"></span><br>
+            </span>
+
+            <label>Fee</label>
+            <div>
+                <input type="radio" id="fee-low" name="fee" value="low">
+                <label for="fee-low">Low</label>
+            </div>
+            <div>
+                <input type="radio" id="fee-normal" name="fee" value="normal" checked>
+                <label for="fee-normal">Normal</label>
+            </div>
+            <div>
+                <input type="radio" id="fee-high" name="fee" value="high">
+                <label for="fee-high">High</label>
+            </div>
+            <div>
+                <label for="projected-gas">Projected Gas:</label>
+                <span id="projected-gas">Loading</span>
+            </div>
+            <div>
+                <label for="expected-fee">Base Fee Estimate:</label>
+                <span id="expected-fee">Loading</span> ETN
+            </div>
+
+            <div>
+                <input type="checkbox" id="advanced-options-chk">
+                <label for="advanced-options-chk">Advanced Options</label>
+            </div>
+
+            <div id="advanced-options" style="display: none;">
+                <table>
+                    <tbody>
+                        <tr class="fee-entry fee-increase">
+                            <td>Base fee is multiplied by</td>
+                            <td class="fee-mul">
+                                <input type="text" size="3">
+                                <span class="error-message"></span>
+                            </td>
+                            <td>after</td>
+                            <td class="fee-time">
+                                <input type="number" size="3" min="1" max="127">
+                                <span class="error-message"></span>
+                            </td>
+                            <td>
+                                <select class="fee-tu">
+                                    <option value="seconds">seconds</option>
+                                    <option value="minutes">minutes</option>
+                                    <option value="hours">hours</option>
+                                    <option value="days">days</option>
+                                    <option value="weeks">weeks</option>
+                                    <option value="months">months</option>
+                                    <option value="years">years</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr class="fee-entry fee-increase">
+                            <td>Base fee is multiplied by</td>
+                            <td class="fee-mul">
+                                <input type="text" size="3">
+                                <span class="error-message"></span>
+                            </td>
+                            <td>after</td>
+                            <td class="fee-time">
+                                <input type="number" size="3" min="1" max="127">
+                                <span class="error-message"></span>
+                            </td>
+                            <td>
+                                <select class="fee-tu">
+                                    <option value="seconds">seconds</option>
+                                    <option value="minutes">minutes</option>
+                                    <option value="hours">hours</option>
+                                    <option value="days">days</option>
+                                    <option value="weeks">weeks</option>
+                                    <option value="months">months</option>
+                                    <option value="years">years</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr class="fee-entry fee-inval">
+                            <td colspan="3">Invalidate transaction if not confirmed after</td>
+                            <td class="fee-time">
+                                <input type="number" size="3" min="1" max="127">
+                                <span class="error-message"></span>
+                            </td>
+                            <td>
+                                <select class="fee-tu">
+                                    <option value="seconds">seconds</option>
+                                    <option value="minutes">minutes</option>
+                                    <option value="hours">hours</option>
+                                    <option value="days">days</option>
+                                    <option value="weeks">weeks</option>
+                                    <option value="months">months</option>
+                                    <option value="years">years</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="spinner" style="display: none;">
+                Loading...
+            </div>
+
+            <button type="submit" id="send-transaction">Send Transaction</button>
+        </form>
+
+        <div id="my-transactions" style="display:none;">
+            <h2>My Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>DataHash</th>
+                        <th>Txid</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <!--
-                    You can add, remove, or re-order these and the code will handle it.
-                    Every fee entry needs to be in some kind of element with "fee-entry" class
-                    and either "fee-increase", or "fee-inval" depending on the type.
-
-                    "fee-increase" requires sub-elements:
-                        input class=fee-mul
-                        input class=fee-time
-                        select class=fee-tu
-
-                    "fee-inval" requires sub-elements:
-                        input class=invalidate-time
-                        input class=invalidate-tu
-                    -->
-
-                    <tr class="fee-entry fee-increase">
-                        <td>Base fee is multiplied by</td>
-                        <td class="fee-mul">
-                            <input type="text" size="3">
-                            <span class="error-message"></span>
-                        </td>
-                        <td>after</td>
-                        <td class="fee-time">
-                            <input type="number" size="3" min="1" max="127">
-                            <span class="error-message"></span>
-                        </td>
-                        <td>
-                            <select class="fee-tu">
-                                <option value="seconds">seconds</option>
-                                <option value="minutes">minutes</option>
-                                <option value="hours">hours</option>
-                                <option value="days">days</option>
-                                <option value="weeks">weeks</option>
-                                <option value="months">months</option>
-                                <option value="years">years</option>
-                            </select>
-                        </td>
+                    <tr>
+                        <td>Waiting</td>
+                        <td>33 Seconds</td>
+                        <td>0x73ba50ae...</td>
+                        <td>-</td>
                     </tr>
-
-                    <tr class="fee-entry fee-increase">
-                        <td>Base fee is multiplied by</td>
-                        <td class="fee-mul">
-                            <input type="text" size="3">
-                            <span class="error-message"></span>
-                        </td>
-                        <td>after</td>
-                        <td class="fee-time">
-                            <input type="number" size="3" min="1" max="127">
-                            <span class="error-message"></span>
-                        </td>
-                        <td>
-                            <select class="fee-tu">
-                                <option value="seconds">seconds</option>
-                                <option value="minutes">minutes</option>
-                                <option value="hours">hours</option>
-                                <option value="days">days</option>
-                                <option value="weeks">weeks</option>
-                                <option value="months">months</option>
-                                <option value="years">years</option>
-                            </select>
-                        </td>
-                    </tr>
-
-                    <tr class="fee-entry fee-inval">
-                        <td colspan="3">Invalidate transaction if not confirmed after</td>
-                        <td class="fee-time">
-                            <input type="number" size="3" min="1" max="127">
-                            <span class="error-message"></span>
-                        </td>
-                        <td>
-                            <select class="fee-tu">
-                                <option value="seconds">seconds</option>
-                                <option value="minutes">minutes</option>
-                                <option value="hours">hours</option>
-                                <option value="days">days</option>
-                                <option value="weeks">weeks</option>
-                                <option value="months">months</option>
-                                <option value="years">years</option>
-                            </select>
-                        </td>
-                    </tr>
-
                 </tbody>
             </table>
         </div>
-
-        <div class="spinner" style="display: none;">
-            <!--
-            Move spinner anywhere you want and change it to a nice looking spinner.
-            It will be shown when there is something loading.
-            -->
-            Loading...
-        </div>
-
-        <button type="submit" id="send-transaction">Send Transaction</button>
-    </form>
-
-    <div id="my-transactions" style="display:none;">
-    <h2>My Transactions</h2>
-    <table class="transaction-table">
-        <thead>
-            <tr>
-                <th>Status</th>
-                <th>Created</th>
-                <th>DataHash</th>
-                <th>Txid</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Waiting</td>
-                <td>33 Seconds</td>
-                <td>0x73ba50ae...</td>
-                <td>-</td>
-            </tr>
-        </tbody>
-    </table>
     </div>
-</div>
+</main>
+
+<!-- Pollen scattered across the page -->
+<div class="floating-pollen"></div>
 
 </body>
 </html>

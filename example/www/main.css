@@ -5,92 +5,363 @@
     box-sizing: border-box;
 }
 
-/* Set body styles for page margins and background */
+/* Set body styles for scrolling */
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
-    color: #333; /* Dark gray text color for readability */
-    background-color: #f4f4f4; /* Light gray background */
-    margin: 20px;
+    color: #333;
+    background-color: #fff7d6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh; /* Allow scrolling when content expands */
+    width: 100vw;
+    overflow-y: auto; /* Enables scrolling */
+    padding: 30px 20px; /* Adds space around the content */
 }
 
-/* Default styles for headings */
-h1, h2, h3, h4, h5, h6 {
-    color: #2c3e50; /* A darker shade for headings */
-    margin-bottom: 15px;
+/* Main content container */
+.container {
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+    margin-bottom: 30px; /* Space below last element */
 }
 
-/* Styles for paragraphs and lists */
-p, ul, ol {
+/* Title styling */
+h1 {
+    color: #3a3002;
     margin-bottom: 15px;
+    font-size: 2em;
+}
+
+/* Ensure paragraph appears below title */
+p {
+    margin: 20px auto;
+    color: #5c4a03;
+    max-width: 500px;
+    text-align: center;
 }
 
 /* Button styling */
 button {
-    background-color: #3498db; /* Blue for buttons */
+    background-color: #ffcc33;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 12px;
     font-size: 1em;
     margin-top: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 button:hover {
-    background-color: #2980b9; /* Darker blue on hover */
+    background-color: #e6b800;
+    transform: translateY(-2px);
 }
 
-button:disabled {
-    background-color: #b1c5d3;
+/* Wallet connected section */
+#wallet-connected {
+    background-color: #fffef2;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    border: 1px solid #ffcc33;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 20px;
+    display: none;
 }
 
-/* Form elements */
+/* Ensure form stays centered */
+form {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Inputs */
 input[type="text"], input[type="number"], select {
     width: 100%;
     padding: 10px;
     margin: 8px 0;
     box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff; /* White background for inputs */
-}
-
-/* Radio buttons and checkboxes */
-input[type="radio"], input[type="checkbox"] {
-    margin-right: 5px;
-}
-
-/* Specific to this layout */
-#wallet-connected {
-    background-color: #fff; /* White background for the wallet section */
-    padding: 20px;
+    border: 1px solid #b89543;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #fffbe2;
 }
 
-#advanced-options-container {
-    background-color: #ecf0f1; /* Light gray for advanced options */
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 4px;
-}
-
-.error-message {
-    color: red;
-}
-
-.transaction-table  {
+/* Transaction table */
+.transaction-table {
     border-collapse: collapse;
-    /* width: 50%; */
-    /* margin: 20px auto; */
+    width: 100%;
+    background-color: #fffbee;
+    border: 1px solid #ffd966;
 }
+
 .transaction-table th, .transaction-table td {
-    border: 1px solid black;
+    border: 1px solid #ffd966;
     padding: 8px;
     text-align: left;
 }
+
 .transaction-table th {
-    background-color: #f2f2f2;
+    background-color: #fdf3bf;
+}
+
+/* Header container */
+.header {
+    width: 100%;
+    height: 30vh; /* Adjusts height for the flower and bee */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* Positioning for the flower and bee inside the header */
+.flower-container {
+    position: relative;
+    display: flex;
+    flex-direction: column; /* Stack bee on top of the flower */
+    align-items: center;
+    width: 20vw; /* Relative size */
+    max-width: 200px;
+}
+
+/* Retro Bee */
+.bee {
+    position: absolute;
+    top: -6vh; /* Moves bee above the flower */
+    left: 6vw; /* Adjusts to center it better */
+    width: 12vw; /* Responsive width */
+    height: 10vh; /* Responsive height */
+    max-width: 60px; /* Limits max size */
+    max-height: 50px;
+    transform: rotate(0deg) scale(1); /* Keeps it upright */
+    animation: buzz 0.3s infinite alternate ease-in-out;
+}
+
+/* Bee Body */
+.bee .body {
+    position: absolute;
+    width: 50px;
+    height: 30px;
+    background: linear-gradient(90deg, #ffcc00 33%, #3a3002 33%, #3a3002 66%, #ffcc00 66%);
+    border-radius: 50px;
+}
+
+/* Bee Head */
+.bee .head {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #3a3002;
+    border-radius: 50%;
+    top: 5px;
+    left: -15px;
+}
+
+/* Bee Eyes */
+.bee .eye {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: white;
+    border-radius: 50%;
+    top: 6px;
+    left: 3px;
+}
+
+/* Bee Wings */
+.bee .wing {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background: #cceeff;
+    border-radius: 50%;
+    top: -10px;
+    left: 10px;
+    opacity: 0.8;
+    animation: flap 0.3s infinite alternate;
+}
+
+.bee .wing.right {
+    left: auto;
+    right: 5px;
+}
+
+/* Bee Antennae */
+.bee .antenna {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #3a3002;
+    border-radius: 50%;
+    top: -7px;
+    left: -5px;
+}
+
+.bee .antenna.right {
+    left: -15px;
+    /*right: -5px;*/
+}
+
+/* Buzzing Animation */
+@keyframes buzz {
+    0% { transform: translateY(-3px) rotate(2deg); }
+    100% { transform: translateY(3px) rotate(-2deg); }
+}
+
+/* Wing Flapping */
+@keyframes flap {
+    0% { transform: rotate(10deg); }
+    100% { transform: rotate(-10deg); }
+}
+
+/* Retro Flower */
+.flower {
+    position: relative;
+    bottom: 0; /* Keeps flower at the bottom of the container */
+    width: 15vw;
+    height: 18vh;
+    max-width: 120px;
+    max-height: 180px;
+}
+
+/* Center part of the flower */
+.flower .center {
+    width: 45px;
+    height: 45px;
+    background: radial-gradient(circle, gold 40%, orange 90%);
+    border-radius: 50%;
+    position: absolute;
+    top: 35px;
+    left: 35px;
+    z-index: 3; /* Higher than petals */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Retro Clustered Petals */
+.flower .petal {
+    width: 75px;
+    height: 85px;
+    background-color: pink;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1; /* Below the center */
+    border-radius: 50% 80% 50% 80% / 70% 50% 60% 40%;
+    transform-origin: center 65px;
+    box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Color variations for a retro look */
+.flower .petal:nth-child(odd) {
+    background-color: #ff69b4;
+}
+.flower .petal:nth-child(even) {
+    background-color: #ff85c2;
+}
+
+/* Arrange petals in a circular pattern */
+.flower .petal:nth-child(1) { transform: rotate(0deg); }
+.flower .petal:nth-child(2) { transform: rotate(45deg); }
+.flower .petal:nth-child(3) { transform: rotate(90deg); }
+.flower .petal:nth-child(4) { transform: rotate(135deg); }
+.flower .petal:nth-child(5) { transform: rotate(180deg); }
+.flower .petal:nth-child(6) { transform: rotate(225deg); }
+.flower .petal:nth-child(7) { transform: rotate(270deg); }
+.flower .petal:nth-child(8) { transform: rotate(315deg); }
+
+/* Curvy, more natural stem */
+.flower .stem {
+    width: 12px;
+    height: 80px;
+    background: linear-gradient(to bottom, #228B22, #2E8B57);
+    position: absolute;
+    top: 80px;
+    left: 55px;
+    border-radius: 10px;
+    transform: rotate(5deg);
+}
+
+/* Pollen container - Positioned inside flower */
+.pollen-container {
+    position: absolute;
+    top: 15px; /* Adjusted to move the pollen slightly above the center */
+    left: 15px;
+    width: 80px;
+    height: 80px;
+    z-index: 6; /* Ensures pollen is ABOVE petals and center */
+}
+
+/* Pollen grains floating above the center */
+.pollen {
+    width: 0.6vw;
+    height: 0.6vw;
+    max-width: 6px;
+    max-height: 6px;
+    background-color: gold;
+    border-radius: 50%;
+    position: absolute;
+    opacity: 0.9;
+    animation: float 3s infinite alternate ease-in-out;
+    z-index: 7; /* Ensures pollen stays ABOVE everything */
+}
+.pollen:nth-child(8) { top: 5px; left: 20px; animation-delay: 0.8s; }
+.pollen:nth-child(9) { top: 10px; left: 35px; animation-delay: 0.9s; }
+.pollen:nth-child(10) { top: 15px; left: 50px; animation-delay: 1s; }
+.pollen:nth-child(11) { top: 20px; left: 10px; animation-delay: 1.1s; }
+.pollen:nth-child(12) { top: 25px; left: 18px; animation-delay: 1.2s; }
+.pollen:nth-child(13) { top: 30px; left: 5px; animation-delay: 1.3s; }
+.pollen:nth-child(14) { top: 35px; left: 22px; animation-delay: 1.4s; }
+.pollen:nth-child(15) { top: 40px; left: 30px; animation-delay: 1.5s; }
+
+/* Floating pollen animation */
+@keyframes float {
+    from { transform: translateY(0) scale(1); opacity: 0.9; }
+    to { transform: translateY(-10px) scale(1.2); opacity: 0.5; }
+}
+
+/* Floating pollen container - Covers entire page */
+.floating-pollen {
+    position: fixed; /* Fixed to cover the entire viewport */
+    width: 100vw; /* Ensures it spans the entire width */
+    height: 100vh; /* Covers full height */
+    pointer-events: none; /* Prevents pollen from interfering with interactions */
+    z-index: -2; /* Keeps it behind content */
+}
+
+/* Individual pollen grains */
+.pollen-grain {
+    position: absolute;
+    width: 0.6vw;
+    height: 0.6vw;
+    max-width: 6px;
+    max-height: 6px;
+    background-color: gold;
+    border-radius: 50%;
+    opacity: 0.9;
+    animation: float 5s infinite alternate ease-in-out, drift 8s infinite linear;
+}
+
+/* Floating effect */
+@keyframes float {
+    0% { transform: translateY(0) scale(1); opacity: 0.9; }
+    50% { transform: translateY(-20px) scale(1.2); opacity: 0.6; }
+    100% { transform: translateY(-40px) scale(1.3); opacity: 0.3; }
+}
+
+/* Erratic left-right movement */
+@keyframes drift {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-15px); }
+    50% { transform: translateX(20px); }
+    75% { transform: translateX(-25px); }
+    100% { transform: translateX(10px); }
 }

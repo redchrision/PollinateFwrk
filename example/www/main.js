@@ -69,6 +69,42 @@ async function connectWallet() {
     }
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+    const pollenContainer = document.querySelector(".floating-pollen");
+    const form = document.getElementById("wallet-connected");
+    const pollenCount = 120; // Increase count for better coverage
+
+    function generatePollen() {
+        pollenContainer.innerHTML = ""; // Clear existing pollen
+        for (let i = 0; i < pollenCount; i++) {
+            let pollen = document.createElement("div");
+            pollen.classList.add("pollen-grain");
+
+            // Randomly assign positions covering the entire screen
+            pollen.style.left = Math.random() * 100 + "vw"; 
+            pollen.style.top = Math.random() * 150 + "vh"; // Cover full page, including expanded form
+            pollen.style.animationDelay = Math.random() * 3 + "s";
+            pollen.style.animationDuration = Math.random() * 6 + 4 + "s";
+            pollen.style.transform = `scale(${Math.random() * 0.6 + 0.7})`;
+
+            pollenContainer.appendChild(pollen);
+        }
+    }
+
+    generatePollen(); // Generate pollen initially
+
+    // Regenerate pollen when the form expands
+    document.getElementById("advanced-options-chk").addEventListener("change", function() {
+        setTimeout(generatePollen, 500); // Small delay to allow form to expand
+    });
+
+    document.getElementById("connect-wallet").addEventListener("click", function() {
+        setTimeout(generatePollen, 500);
+    });
+});
+
+
+
 const FEE_POLICIES = {
     low: [
         [0.25, 0, 'seconds'],
