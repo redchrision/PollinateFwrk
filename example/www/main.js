@@ -389,8 +389,21 @@ const periodic = async () => {
     }
 };
 
+const clickRequestSnz = async () => {
+    if (!wallet || !wallet.signer) {
+        return;
+    }
+    const address = await wallet.signer.getAddress();
+    const recipient = 'sneeze-it@cjdns.fr';
+    const subject = encodeURIComponent(`Sneeze Tokens for ${address}`);
+    const body = encodeURIComponent('Can I please have some sneeze tokens to try out?');
+    const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    window.location.href = mailtoLink;
+};
+
 $(function () {
     setInterval(periodic, 100);
+    $('#request-sneeze').click(clickRequestSnz);
     setFeePolicy('normal');
     $('#connect-wallet').click(() => {
         if ($('#wallet-connected').is(':hidden')) {
@@ -399,6 +412,7 @@ $(function () {
                 if (wallet) {
                     $('#connect-wallet').text("Disconnect Wallet");
                     $('#wallet-connected').show();
+                    $('#request-sneeze').removeClass('disabled');
                     periodicTick = 0;
                 }
             })();
@@ -406,6 +420,7 @@ $(function () {
             wallet = null;
             $('#connect-wallet').text("Connect Wallet");
             $('#wallet-connected').hide();
+            $('#request-sneeze').addClass('disabled');
         }
     });
 

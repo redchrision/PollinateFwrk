@@ -51,13 +51,35 @@
     <h1 id="sneeze-wallet-title">Sneeze Wallet</h1>
 
     <p>
-        Sneeze Token is an example for demonstrating the capabilities of the Pollinate framework.
-        Using the Sneeze Wallet, you can send Sneeze Tokens and pay the fees in the native Sneeze currency.
-        This is done by converting your transactions into Pollinate messages and sending them to the
-        Pollinate network.
+        Sneeze Token is a demonstrator to show the capabilities of the Pollinate Framework.
+        Sneeze uses the Pollinate
+        <a href="https://github.com/redchrision/PollinateFwrk/blob/main/contracts/UniswapV2Helper.sol">UniswapV2Helper</a>
+        contract to cover transaction fees by selling a little bit of SNZ during each
+        transaction. This allows you to hold and transfer SNZ without holding any other
+        token for fee payment.
+    </p>
+
+    <p>
+        If you don't have any Sneeze Tokens, you can request some from the SneezeIt Faucet Bot
+        after connecting your wallet. If you want more, you can buy them on the
+        <a href="https://app.electroswap.io/explore/tokens/electroneum/0x9E5Ca6fdf143616b065e20d5B8ca4127e7d43CC6?inputCurrency=ETN">Sneeze Token ElectroSwap DEX</a>
+        using Electroneum.
+    </p>
+
+    <p>
+        If you're just testing, the bot provides plenty, and you
+        don't need Electroneum because fees are paid directly in SNZ. All you need is a Web3 wallet.
+    </p>
+
+    <p>
+        If you would like to learn how to build self-funding tokens like SNZ, please check the
+        Pollinate open source smart contract framework
+        <a href="https://github.com/redchrision/PollinateFwrk">https://github.com/redchrision/PollinateFwrk</a>
     </p>
 
     <button id="connect-wallet">Connect Wallet</button>
+
+    <button id="request-sneeze" class=disabled>Request Sneeze Tokens</button>
 
     <div id="wallet-connected" style="display:none;">
         <p>Your Address: <span id="address">Loading</span> (If it's the wrong one, change it in MetaMask)</p>
