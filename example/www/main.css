@@ -459,20 +459,40 @@ input[type="text"], input[type="number"], select {
     margin-top: 10px;
 }
 
-/* Align Fee Options Horizontally */
 .fee-options {
     display: flex;
-    gap: 15px; /* Adds space between options */
-    margin-top: 5px;
+    align-items: center;
+    gap: 15px; /* Increases space between options, but keeps labels close */
 }
 
-/* General Input Group Styling (Applies to Address, Amount, Fee) */
+/* Ensure labels are tightly next to the radio buttons */
+.fee-options label {
+    margin-left: 2px; /* Brings label closer to the radio button */
+    white-space: nowrap; /* Prevents labels from breaking to new lines */
+}
+
+/* Reduce the space between radio button and text */
+.fee-options input[type="radio"] {
+    margin-right: 1px; /* Fine-tune spacing between radio button and label */
+}
+
 .input-group {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
     width: 100%;
+    margin-bottom: 5px; /* Reduced space between rows */
+}
+
+.input-group label {
+    font-weight: bold;
+    min-width: 120px; /* Slightly smaller to bring items closer */
+    text-align: left;
+}
+
+.input-group span {
+    flex-grow: 1;
+    text-align: right;
 }
 
 /* Style for labels inside input groups */
@@ -490,7 +510,48 @@ input[type="text"], input[type="number"], select {
 
 /* Ensure labels are closer to their respective radio buttons */
 .fee-options input[type="radio"] {
-    margin-right: 0.1px; /* Reduces space between radio button and label */
+    margin-right: 0.01px; /* Reduces space between radio button and label */
 }
+
+/* Adjust table width to match input fields */
+.fee-table {
+    width: 100%;
+    max-width: 100%; /* Ensure it takes full width */
+    border-collapse: collapse;
+    margin-top: 10px;
+    background-color: #fffbee;
+    border: 1px solid #ffd966;
+}
+
+/* Style the table rows and columns */
+.fee-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ffd966;
+    width: 50%; /* Ensure even spacing */
+}
+
+/* Remove bottom border for the last row */
+.fee-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Ensure labels have the same format */
+.fee-table label {
+    font-weight: bold;
+    display: inline-block;
+    width: 100%; /* Stretch to match input width */
+}
+
+/* Add space between the fee table and Advanced Options */
+#advanced-options-chk {
+    margin-top: 20px; /* Increases space between the table and the checkbox */
+}
+
+/* Ensure Advanced Options section also has some spacing */
+#advanced-options {
+    margin-top: 20px; /* Adds extra spacing when the section appears */
+}
+
 
 
