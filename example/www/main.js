@@ -391,14 +391,6 @@ const periodic = async () => {
     }
 };
 
-const sendEmailPopup = async (address) => alert(`To send the request, please write an email
-To: sneeze-it@cjdns.fr
-Subject: Sneeze Tokens for ${address}
-Body: Can I please have some sneeze tokens to try out?
-
-Make sure the subject line is correct because that's what the bot looks for.
-`);
-
 const clickRequestSnz = async () => {
     if (!wallet || !wallet.signer) {
         return;
