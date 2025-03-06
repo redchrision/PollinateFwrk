@@ -389,6 +389,14 @@ const periodic = async () => {
     }
 };
 
+const sendEmailPopup = async (address) => alert(`To send the request, please write an email
+To: sneeze-it@cjdns.fr
+Subject: Sneeze Tokens for ${addr}
+Body: Can I please have some sneeze tokens to try out?
+
+Make sure the subject line is correct because that's what the bot looks for.
+`);
+
 const clickRequestSnz = async () => {
     if (!wallet || !wallet.signer) {
         return;
@@ -398,7 +406,21 @@ const clickRequestSnz = async () => {
     const subject = encodeURIComponent(`Sneeze Tokens for ${address}`);
     const body = encodeURIComponent('Can I please have some sneeze tokens to try out?');
     const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
-    window.location.href = mailtoLink;
+
+    // Attempt to open the mailto link in a new tab/window
+    const mailWindow = window.open(mailtoLink, '_blank');
+
+    // Fallback logic: Check if the window opened successfully
+    if (!mailWindow || mailWindow.closed || typeof mailWindow.closed === 'undefined') {
+        // Immediate failure (e.g., pop-up blocked or no email client)
+        sendEmailPopup(address);
+        return;
+    }
+    setTimeout(() => {
+        if (mailWindow.closed) {
+            sendEmailPopup(address);
+        }
+    }, 1000);
 };
 
 $(function () {
