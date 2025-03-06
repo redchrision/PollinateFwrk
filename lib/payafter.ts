@@ -219,7 +219,8 @@ const hexToBytes = (hex: string): Uint8Array => {
 
 export const signCalls = async (signer: Signer, calls: string[], fees: FeeEntry_t[]): Promise<string> => {
     const csum = (await signer.getAddress()).slice(-6);
-    const ts = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+    const block = await signer.provider.getBlock('latest');
+    const ts = block.timestamp.toString(16).padStart(8, '0');
 
     if (fees.length < 1) { 
         throw new Error("signCalls() at least one fee specification is required."); 
