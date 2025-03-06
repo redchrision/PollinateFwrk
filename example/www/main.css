@@ -550,8 +550,13 @@ input[type="text"], input[type="number"], select {
 
 /* Ensure Advanced Options section also has some spacing */
 #advanced-options {
-    margin-top: 20px; /* Adds extra spacing when the section appears */
+    margin-top: 10px; /* Adds extra spacing when the section appears */
 }
 
-
+.transaction-table td {
+    white-space: normal; /* Allows text wrapping */
+    word-wrap: break-word; /* Ensures long text breaks properly */
+    overflow-wrap: break-word;
+    max-width: 200px; /* Adjust as needed */
+}
 

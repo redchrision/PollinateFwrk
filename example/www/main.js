@@ -347,18 +347,20 @@ const periodic = async () => {
                 const created = $('<td>');
                 created.text('' + (new Date(txn.create_time * 1000)));
                 const dataHash = $('<td>');
-                dataHash.text(txn.data_hash.slice(0,18));
+                dataHash.text(txn.data_hash); // Show full DataHash
                 if (txn.data_hash) { dataHash.attr('title', txn.data_hash); }
+                
                 const txid = $('<td>');
                 if (txn.txid) {
                     const txida = $('<a>');
-                    txida.text(txn.txid.slice(0,18));
+                    txida.text(txn.txid); // Show full Txid
                     txida.attr('title', txn.txid);
                     txida.attr('href', 'https://blockexplorer.electroneum.com/tx/' + txn.txid);
                     txid.append(txida);
                 } else {
                     txid.text('-');
                 }
+                
 
                 const tr = $(`<tr>`);
                 tr.append(status);
