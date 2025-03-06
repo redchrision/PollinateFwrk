@@ -391,7 +391,7 @@ const periodic = async () => {
 
 const sendEmailPopup = async (address) => alert(`To send the request, please write an email
 To: sneeze-it@cjdns.fr
-Subject: Sneeze Tokens for ${addr}
+Subject: Sneeze Tokens for ${address}
 Body: Can I please have some sneeze tokens to try out?
 
 Make sure the subject line is correct because that's what the bot looks for.
@@ -407,20 +407,16 @@ const clickRequestSnz = async () => {
     const body = encodeURIComponent('Can I please have some sneeze tokens to try out?');
     const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
 
-    // Attempt to open the mailto link in a new tab/window
-    const mailWindow = window.open(mailtoLink, '_blank');
-
-    // Fallback logic: Check if the window opened successfully
-    if (!mailWindow || mailWindow.closed || typeof mailWindow.closed === 'undefined') {
-        // Immediate failure (e.g., pop-up blocked or no email client)
+    const t = setTimeout(() => {
         sendEmailPopup(address);
-        return;
-    }
-    setTimeout(() => {
-        if (mailWindow.closed) {
-            sendEmailPopup(address);
-        }
-    }, 1000);
+    }, 500);
+
+    $(window).blur(function() {
+        // The browser apparently responded, so stop the timeout.
+        clearTimeout(t);
+    });
+
+    window.location.href = mailtoLink;
 };
 
 $(function () {
