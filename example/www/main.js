@@ -408,11 +408,13 @@ const clickRequestSnz = async () => {
     const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
 
     const t = setTimeout(() => {
+        console.log("Popup");
         sendEmailPopup(address);
     }, 500);
 
     $(window).blur(function() {
         // The browser apparently responded, so stop the timeout.
+        console.log("Blur");
         clearTimeout(t);
     });
 
