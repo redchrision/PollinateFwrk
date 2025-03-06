@@ -108,17 +108,20 @@
 
         <h2>Send Sneezes</h2>
         <form id="send-sneezes-form">
-            <span id="recipient-address">
-                <label>Address:</label>
-                <input type="text" placeholder="Enter Address"><br>
-                <span class="error-message"></span><br>
-            </span>
-
-            <span id="amount">
-                <label>Amount:</label>
-                <input type="text" placeholder="Amount"><br>
-                <span class="error-message"></span><br>
-            </span>
+            <div class="input-container">
+                <div class="input-group">
+                    <label for="recipient-address">Address:</label>
+                    <input type="text" id="recipient-address" placeholder="Enter Address">
+                </div>
+            
+                <div class="input-group">
+                    <label for="amount">Amount:</label>
+                    <input type="text" id="amount" placeholder="Enter Amount">
+                </div>
+            </div>
+            <span class="error-message" id="address-error"></span>
+            <span class="error-message" id="amount-error"></span>            
+            
 
             <label>Fee</label>
             <div>

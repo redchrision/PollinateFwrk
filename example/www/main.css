@@ -418,3 +418,36 @@ input[type="text"], input[type="number"], select {
         padding: 8px;
     }
 }
+
+/* Stack Address and Amount vertically */
+.input-container {
+    display: flex;
+    flex-direction: column; /* Ensures inputs are stacked */
+    width: 100%;
+}
+
+/* Keep label and input on the same line */
+.input-group {
+    display: flex;
+    align-items: center; /* Aligns text with input field */
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* Ensure labels have a fixed width */
+.input-group label {
+    width: 100px; /* Adjust as needed */
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Inputs take the remaining space */
+.input-group input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #b89543;
+    border-radius: 8px;
+    background-color: #fffbe2;
+    width: 100%;
+}
+
