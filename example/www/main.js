@@ -404,24 +404,44 @@ const clickRequestSnz = async () => {
         return;
     }
     const address = await wallet.signer.getAddress();
-    const recipient = 'sneeze-it@cjdns.fr';
-    const subject = encodeURIComponent(`Sneeze Tokens for ${address}`);
-    const body = encodeURIComponent('Can I please have some sneeze tokens to try out?');
-    const mailtoLink = `mailto:${recipient}?subject=${subject}&body=${body}`;
+    
+    // Create the request text
+    const requestText = `To: sneeze-it@cjdns.fr\nSubject: Sneeze Tokens for ${address}\n\nCan I please have some sneeze tokens to try out?`;
 
-    const t = setTimeout(() => {
-        console.log("Popup");
-        sendEmailPopup(address);
-    }, 500);
+    // Insert text into modal textarea
+    document.getElementById("request-text").value = requestText;
 
-    $(window).blur(function() {
-        // The browser apparently responded, so stop the timeout.
-        console.log("Blur");
-        clearTimeout(t);
-    });
-
-    window.location.href = mailtoLink;
+    // Show the modal
+    document.getElementById("request-modal").style.display = "flex";
 };
+
+// Copy text to clipboard and change button text
+document.getElementById("copy-button").addEventListener("click", function () {
+    const textArea = document.getElementById("request-text");
+    textArea.select();
+    document.execCommand("copy");
+
+    // Change button text to "Copied"
+    const copyButton = document.getElementById("copy-button");
+    copyButton.textContent = "Copied!";
+    copyButton.style.backgroundColor = "#4CAF50"; // Change color to green
+
+    // Revert back to original text after 2 seconds
+    setTimeout(() => {
+        copyButton.textContent = "Copy to Clipboard";
+        copyButton.style.backgroundColor = "#ffcc33"; // Reset to original color
+    }, 2000);
+});
+
+
+// Close modal when clicking the close button
+document.getElementById("close-modal").addEventListener("click", function () {
+    document.getElementById("request-modal").style.display = "none";
+});
+
+// Attach event to the Request button
+document.getElementById("request-sneeze").addEventListener("click", clickRequestSnz);
+
 
 $(function () {
     setInterval(periodic, 100);
