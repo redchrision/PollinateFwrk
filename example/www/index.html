@@ -60,9 +60,28 @@
     <button id="connect-wallet">Connect Wallet</button>
 
     <div id="wallet-connected" style="display:none;">
-        <p>Your Address: <span id="address">Loading</span> (If it's the wrong one, change it in MetaMask)</p>
-        <p>Your Sneeze Balance: <span id="sneeze-balance">Loading</span></p>
-        <p>Your Electroneum Balance: <span id="electroneum-balance">Loading</span></p>
+        <table class="wallet-table">
+            <thead>
+                <tr>
+                    <th>Information</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Your Address</td>
+                    <td id="address">Loading...</td>
+                </tr>
+                <tr>
+                    <td>Your Sneeze Balance</td>
+                    <td id="sneeze-balance">Loading...</td>
+                </tr>
+                <tr>
+                    <td>Your Electroneum Balance</td>
+                    <td id="electroneum-balance">Loading...</td>
+                </tr>
+            </tbody>
+        </table>        
 
         <h2>Send Sneezes</h2>
         <form id="send-sneezes-form">

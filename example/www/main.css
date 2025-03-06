@@ -75,7 +75,10 @@ button:hover {
     max-width: 500px;
     margin-top: 20px;
     display: none;
+    overflow: hidden; /* Prevents resizing when content expands */
 }
+
+
 
 /* Ensure form stays centered */
 form {
@@ -94,25 +97,6 @@ input[type="text"], input[type="number"], select {
     border-radius: 8px;
     background-color: #fffbe2;
 }
-
-/* Transaction table */
-.transaction-table {
-    border-collapse: collapse;
-    width: 100%;
-    background-color: #fffbee;
-    border: 1px solid #ffd966;
-}
-
-.transaction-table th, .transaction-table td {
-    border: 1px solid #ffd966;
-    padding: 8px;
-    text-align: left;
-}
-
-.transaction-table th {
-    background-color: #fdf3bf;
-}
-
 /* Header container */
 .header {
     width: 100%;
@@ -364,4 +348,68 @@ input[type="text"], input[type="number"], select {
     50% { transform: translateX(20px); }
     75% { transform: translateX(-25px); }
     100% { transform: translateX(10px); }
+}
+
+/* Ensure the form adapts dynamically */
+#wallet-connected {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 1000px; /* Adjust width based on content */
+    min-height: 450px; /* Minimum height */
+    max-width: 90%;
+    padding: 20px;
+    margin: 0 auto; /* Centers horizontally */
+    background-color: #fffef2;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    border: 1px solid #ffcc33;
+}
+
+/* Style for both tables */
+.wallet-table, .transaction-table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #fffbee; /* Match background */
+    border: 1px solid #ffd966; /* Match border color */
+    text-align: left;
+    table-layout: fixed; /* Prevent table resizing the container */
+}
+
+/* Table headers */
+.wallet-table th, .transaction-table th {
+    background-color: #fdf3bf; /* Match header background */
+    padding: 10px;
+    border: 1px solid #ffd966;
+    text-align: center;
+}
+
+/* Table data cells */
+.wallet-table td, .transaction-table td {
+    border: 1px solid #ffd966; /* Ensure matching borders */
+    padding: 8px;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+/* Ensure table formatting remains consistent */
+.wallet-table {
+    margin-top: 10px;
+}
+
+
+/* Adjust table size for small screens */
+@media (max-width: 768px) {
+    #wallet-connected {
+        width: 95%;
+    }
+
+    .wallet-table {
+        font-size: 14px;
+    }
+
+    .wallet-table th, .wallet-table td {
+        padding: 8px;
+    }
 }
