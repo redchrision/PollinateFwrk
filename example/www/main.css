@@ -451,3 +451,46 @@ input[type="text"], input[type="number"], select {
     width: 100%;
 }
 
+/* Fee Label on a Separate Line */
+.fee-container {
+    display: flex;
+    flex-direction: column; /* Ensures "Fee" is on its own line */
+    align-items: flex-start;
+    margin-top: 10px;
+}
+
+/* Align Fee Options Horizontally */
+.fee-options {
+    display: flex;
+    gap: 15px; /* Adds space between options */
+    margin-top: 5px;
+}
+
+/* General Input Group Styling (Applies to Address, Amount, Fee) */
+.input-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+/* Style for labels inside input groups */
+.input-group label {
+    width: 100px; /* Makes all labels the same width */
+    text-align: center;
+    font-weight: bold;
+}
+
+.fee-options {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Reduced spacing for tighter layout */
+}
+
+/* Ensure labels are closer to their respective radio buttons */
+.fee-options input[type="radio"] {
+    margin-right: 0.1px; /* Reduces space between radio button and label */
+}
+
+

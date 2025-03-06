@@ -123,19 +123,21 @@
             <span class="error-message" id="amount-error"></span>            
             
 
-            <label>Fee</label>
-            <div>
-                <input type="radio" id="fee-low" name="fee" value="low">
-                <label for="fee-low">Low</label>
+            <div class="input-group">
+                <label for="fee">Fee:</label>
+                <div class="fee-options">
+                    <input type="radio" id="fee-low" name="fee" value="low">
+                    <label for="fee-low">Low</label>
+            
+                    <input type="radio" id="fee-normal" name="fee" value="normal" checked>
+                    <label for="fee-normal">Normal</label>
+            
+                    <input type="radio" id="fee-high" name="fee" value="high">
+                    <label for="fee-high">High</label>
+                </div>
             </div>
-            <div>
-                <input type="radio" id="fee-normal" name="fee" value="normal" checked>
-                <label for="fee-normal">Normal</label>
-            </div>
-            <div>
-                <input type="radio" id="fee-high" name="fee" value="high">
-                <label for="fee-high">High</label>
-            </div>
+            
+            
             <div>
                 <label for="projected-gas">Projected Gas:</label>
                 <span id="projected-gas">Loading</span>
