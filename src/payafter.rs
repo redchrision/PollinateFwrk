@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::{sync::Arc, time::Duration};
 
 use alloy::hex;
@@ -5,7 +6,11 @@ use alloy::primitives::{eip191_hash_message, Bytes, PrimitiveSignature};
 use alloy::primitives::keccak256;
 use alloy::{
     primitives::{utils::format_ether, Address, B256, U256},
-    providers::Provider,
+    providers::{
+        Provider,
+        PendingTransactionError,
+        WatchTxError,
+    }
 };
 use alloy_sol_types::SolValue;
 use eyre::{bail, OptionExt, Result};
@@ -44,7 +49,9 @@ pub struct Transaction {
 
     pub estimated_gas: Option<u64>,
 
-    pub fees: Vec<(U256, u64)>
+    pub fees: Vec<(U256, u64)>,
+
+    pub txids: HashSet<B256>,
 }
 impl Transaction {
     pub fn when_valid(&self) -> u64 {
@@ -58,6 +65,36 @@ impl Transaction {
             .find(|(amt, _)|*amt == U256::MAX)
             .map(|(_,when)|*when)
             .unwrap_or(u64::MAX)
+    }
+    pub fn fee_at_time(&self, at_time: u64) -> Option<U256> {
+        for (i, (fee, time)) in self.fees.iter().enumerate().rev() {
+            if *time > at_time {
+                continue;
+            }
+            if i == self.fees.len() - 1 {
+                return Some(*fee);
+            }
+            let (f_plus_one, t_plus_one) = self.fees[i+1];
+
+            if f_plus_one == U256::MAX {
+                return Some(*fee);
+            }
+
+            let f0 = *fee;
+            let f1 = f_plus_one;
+            let t0 = U256::from(*time);
+            let t1 = U256::from(t_plus_one);
+            let t_target = U256::from(at_time);
+
+            let time_diff = t1 - t0;
+            let fee_diff = f1 - f0;
+            let time_progress = t_target - t0;
+
+            let interpolated_fee = f0 + (time_progress * fee_diff) / time_diff;
+
+            return Some(interpolated_fee);
+        }
+        None
     }
     pub fn when_is_fee_at_least(&self, min_fee: U256) -> Option<u64> {
         for (i, (fee, time)) in self.fees.iter().enumerate() {
@@ -129,6 +166,7 @@ pub fn parse_transaction(config: &Config, bin: Bytes) -> Result<Transaction>
         signer,
         estimated_gas: None,
         fees,
+        txids: HashSet::new(),
     })
 }
 
@@ -163,28 +201,56 @@ async fn estimate_gas(txn: &Transaction, provider: MyProvider) -> Result<u64> {
     Ok(gas)
 }
 
-async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<B256> {
+async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
+    for txid in &txn.txids {
+        println!("Checking txid {txid} to see if it's committed");
+        let Some(rcpt) = srv.prov.get_transaction_receipt(*txid).await? else {
+            println!("No receipt");
+            continue;
+        };
+        let Some(block) = rcpt.block_number else {
+            println!("No block number");
+            continue;
+        };
+        println!("Landed in block {block}!");
+        return Ok((txid.clone(), true));
+    }
+
+    let max_fee = txn.fee_at_time(now_sec()).ok_or_eyre("No valid fee at now time")?;
+    let gas = txn.estimated_gas.ok_or_eyre("missing gas")?;
+    let gp = gas_price(srv).await?;
+
+    let max_priority_per_gas = (max_fee - (U256::from(gp.base) * U256::from(gas))) / U256::from(gas);
+    let max_total_per_gas = max_fee / U256::from(gas);
+
     let contract =
         IPayAfterDispatcher::new(PAYAFTER_DISPATCHER_ADDR, srv.prov.clone());
 
-    let gp = gas_price(srv).await?;
     let tx = contract.dispatch(
         txn.bin.clone().into(),
         [].into(),
     )
-    .max_priority_fee_per_gas(gp)
-    .max_fee_per_gas(gp)
-    .gas(txn.estimated_gas.ok_or_eyre("missing gas")?)
+    .max_priority_fee_per_gas(max_priority_per_gas.to())
+    .max_fee_per_gas(max_total_per_gas.to())
+    .gas(gas)
     .send().await?;
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying PayAfter for {}", txn.data_hash);
     let bal = srv.prov.get_balance(srv.my_addr.clone()).await?;
 
-    let tx = tx.with_timeout(Some(Duration::from_secs(60)));
+    let tx = tx.with_timeout(Some(Duration::from_secs(20)));
     let txid = *tx.tx_hash();
     println!("  - TXID {}", txid);
-    let recp = tx.get_receipt().await?;
+    let recp = match tx.get_receipt().await {
+        Ok(r) => r,
+        Err(PendingTransactionError::TxWatcher(WatchTxError::Timeout)) => {
+            return Ok((txid,false));
+        }
+        Err(e) => {
+            return Err(e.into());
+        }
+    };
     println!("  - In block {}", recp.block_number.unwrap_or(0));
 
     let bal2 = srv.prov.get_balance(srv.my_addr.clone()).await?;
@@ -193,7 +259,7 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<B256> {
     } else {
         println!("  - Loss: {}", format_ether(bal - bal2));
     }
-    Ok(txid)
+    Ok((txid, true))
 }
 
 async fn accept_txn(srv: &Arc<Server>, txn: &Transaction, time_to_run: u64) -> Result<()> {
@@ -237,17 +303,25 @@ pub async fn discover_txn(srv: &Arc<Server>, mut txn: Transaction) -> Result<Dis
     txn.estimated_gas = Some(gas);
     println!("Txn {} has estimated gas: {}", txn.data_hash, gas);
     let min_payout =
-        U256::from(gas) * U256::from(gas_price(srv).await?) + srv.minimum_profit;
+        U256::from(gas) * U256::from(gas_price(srv).await?.total()) + srv.minimum_profit;
     let time_to_run = match txn.when_is_fee_at_least(min_payout) {
         Some(t) => t,
         None => bail!("Transaction never pays minimum fee"),
     };
-    println!("Expected min payoout for txn: {} is {}", txn.data_hash, min_payout);
+    println!("Expected min payout for txn: {} is {}", txn.data_hash, min_payout);
     accept_txn(srv, &txn, time_to_run).await?;
     if time_to_run <= now {
         println!("Running {}", txn.data_hash);
-        let txid = run_txn(&txn, srv).await?;
-        Ok(DiscoverTxnRes::SentTxid(txid))
+        let (txid, completed) = run_txn(&txn, srv).await?;
+        if completed {
+            Ok(DiscoverTxnRes::SentTxid(txid))
+        } else {
+            let time_to_run = now + 60;
+            println!("Transaction timed out, re-staging {} until {}", txn.data_hash, time_to_run);
+            txn.txids.insert(txid);
+            accept_txn(srv, &txn, time_to_run).await?;
+            Ok(DiscoverTxnRes::WaitUntil(time_to_run))
+        }
     } else {
         println!("Staging {} until {}", txn.data_hash, time_to_run);
         Ok(DiscoverTxnRes::WaitUntil(time_to_run))
@@ -315,6 +389,8 @@ pub async fn check_payafter_thread(srv: Arc<Server>, mut recv_wakeup: mpsc::Rece
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use alloy::{hex, primitives::{Address, B256, U256}};
 
     use crate::{config::Config, payafter::{parse_transaction, Transaction}};
@@ -360,6 +436,7 @@ mod tests {
             data_hash: B256::ZERO,
             signer: Address::ZERO,
             estimated_gas: None,
+            txids: HashSet::new(),
         };
 
         // Test case 1: Interpolated time between 100 and 200

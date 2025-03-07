@@ -10,7 +10,7 @@ use alloy::{
         Identity, Provider
     },
 };
-use eyre::{Context, Result};
+use eyre::{Context, OptionExt, Result};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, Mutex};
 
@@ -72,9 +72,20 @@ pub struct State {
     pub payafter: HashMap<B256, PayAfterTxn>,
 }
 
+#[derive(Clone)]
+pub struct FeePerGas {
+    pub base: u64,
+    pub priority: u128,
+}
+impl FeePerGas {
+    pub fn total(&self) -> u128 {
+        self.priority + self.base as u128
+    }
+}
+
 pub struct ServerMut {
     pub state: State,
-    pub gas_price: u128,
+    pub gas_price: Option<FeePerGas>,
     pub gas_price_last_checked: u64,
     pub send_wakeup: mpsc::Sender<()>,
 }
@@ -88,20 +99,29 @@ pub struct Server {
     pub txn_lock: Mutex<()>,
 }
 
-pub async fn gas_price(srv: &Arc<Server>) -> Result<u128> {
+pub async fn gas_price(srv: &Arc<Server>) -> Result<FeePerGas> {
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs();
     {
         let m = srv.m.lock().await;
-        if m.gas_price_last_checked + 60 > now {
-            return Ok(m.gas_price);
+        if m.gas_price_last_checked + 60 < now {
+        } else if let Some(fpg) = &m.gas_price {
+            return Ok(fpg.clone());
         }
     }
-    let fee = srv.prov.get_max_priority_fee_per_gas().await
-        .context("get_max_priority_fee_per_gas()")?;
+    let blk = srv.prov.get_block_by_number(
+        alloy::eips::BlockNumberOrTag::Pending,
+        alloy::rpc::types::BlockTransactionsKind::Hashes).await?
+        .ok_or_eyre("get_block_by_number returned None")?;
+    let out = FeePerGas{
+        base: blk.header.base_fee_per_gas.ok_or_eyre("Block missing base_fee_per_gas")?,
+        priority: srv.prov.get_max_priority_fee_per_gas().await
+            .context("get_max_priority_fee_per_gas()")?,
+    };
+
     {
         let mut m = srv.m.lock().await;
         m.gas_price_last_checked = now;
-        m.gas_price = fee;
+        m.gas_price = Some(out.clone());
     }
-    Ok(fee)
+    Ok(out)
 }

@@ -29,7 +29,7 @@ async fn get_nectar(srv: &Arc<Server>, addr: &Address) -> Result<U256> {
 }
 
 async fn is_advantageous(srv: &Arc<Server>, nectar: U256, info: &StatePeriodic) -> Result<bool> {
-    let fee = U256::from(info.last_estimated_gas) * U256::from(gas_price(srv).await?);
+    let fee = U256::from(info.last_estimated_gas) * U256::from(gas_price(srv).await?.total());
     Ok(nectar > fee + srv.minimum_profit)
 }
 
@@ -72,7 +72,7 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
     
     if !is_advantageous(srv, nectar, &info).await? {
         println!("Not enough nectar to run {addr} yet, has {nectar} but projected cost is {} required profit: {}",
-            U256::from(info.last_estimated_gas) * U256::from(gas_price(srv).await?), srv.minimum_profit);
+            U256::from(info.last_estimated_gas) * U256::from(gas_price(srv).await?.total()), srv.minimum_profit);
         srv.m.lock().await.state.periodic_contracts.insert(addr, info);
         return Ok(true);
     }
