@@ -227,6 +227,10 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
     let contract =
         IPayAfterDispatcher::new(PAYAFTER_DISPATCHER_ADDR, srv.prov.clone());
 
+    let _l = srv.txn_lock.lock().await;
+    println!("Trying PayAfter for {}", txn.data_hash);
+    let bal = srv.prov.get_balance(srv.my_addr.clone()).await?;
+
     let tx = contract.dispatch(
         txn.bin.clone().into(),
         [].into(),
@@ -236,9 +240,8 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
     .gas(gas)
     .send().await?;
 
-    let _l = srv.txn_lock.lock().await;
-    println!("Trying PayAfter for {}", txn.data_hash);
-    let bal = srv.prov.get_balance(srv.my_addr.clone()).await?;
+    println!("max_priority_fee_per_gas = {}, max_fee_per_gas = {}",
+        max_priority_per_gas, max_total_per_gas);
 
     let tx = tx.with_timeout(Some(Duration::from_secs(20)));
     let txid = *tx.tx_hash();
