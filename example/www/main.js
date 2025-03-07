@@ -218,7 +218,7 @@ const createTransaction = async (to, amt, fees) => {
 };
 
 const checkInputs = () => {
-    const to = $('#recipient-address input').val();
+    const to = $('input#recipient-address').val();
     let error = '';
     if (to !== '' && !ethers.isAddress(to)) {
         $('#recipient-address .error-message').text("Must be a valid ETN address");
@@ -227,7 +227,7 @@ const checkInputs = () => {
         $('#recipient-address .error-message').text('');
         if (to === '') { error = 'Address is invalid'; }
     }
-    const amtS = $('#amount input').val();
+    const amtS = $('input#amount').val();
     let amt = BigInt(0);
 
     if (amtS !== '') {
@@ -332,7 +332,7 @@ const periodic = async () => {
                 const status = $(`<td>`);
                 if (txn.error) {
                     status.attr('title', txn.error);
-                    status.text('Error...');
+                    status.text('Error: ' + txn.error);
                 } else if (txn.txid) {
                     status.text('Complete');
                 } else if (txn.wait_until) {
