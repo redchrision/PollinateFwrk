@@ -8,7 +8,7 @@ use alloy::{
     providers::Provider,
 };
 use alloy_sol_types::SolValue;
-use eyre::{bail, Result};
+use eyre::{bail, OptionExt, Result};
 use tokio::select;
 use tokio::sync::mpsc;
 
@@ -171,7 +171,11 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<B256> {
     let tx = contract.dispatch(
         txn.bin.clone().into(),
         [].into(),
-    ).max_priority_fee_per_gas(gp).send().await?;
+    )
+    .max_priority_fee_per_gas(gp)
+    .max_fee_per_gas(gp)
+    .gas(txn.estimated_gas.ok_or_eyre("missing gas")?)
+    .send().await?;
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying PayAfter for {}", txn.data_hash);
