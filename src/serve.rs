@@ -183,7 +183,7 @@ pub async fn serve(config_path: PathBuf) -> Result<()> {
     let srv = Arc::new(Server{
         m: Mutex::new(ServerMut {
             state,
-            gas_price: 0,
+            gas_price: None,
             gas_price_last_checked: 0,
             send_wakeup,
         }),
