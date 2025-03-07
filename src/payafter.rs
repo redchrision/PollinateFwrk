@@ -166,10 +166,12 @@ async fn estimate_gas(txn: &Transaction, provider: MyProvider) -> Result<u64> {
 async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<B256> {
     let contract =
         IPayAfterDispatcher::new(PAYAFTER_DISPATCHER_ADDR, srv.prov.clone());
+
+    let gp = gas_price(srv).await?;
     let tx = contract.dispatch(
         txn.bin.clone().into(),
         [].into(),
-    ).send().await?;
+    ).max_priority_fee_per_gas(gp).send().await?;
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying PayAfter for {}", txn.data_hash);

@@ -121,6 +121,7 @@ pub async fn check_periodics_thread(srv: Arc<Server>) {
                 for ee in e.chain() {
                     println!("  - {ee}");
                 }
+                tokio::time::sleep(Duration::from_secs(60)).await;
             }
             Ok(true) => { continue; }
             Ok(false) => {},
