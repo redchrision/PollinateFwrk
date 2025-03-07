@@ -109,8 +109,9 @@ pub async fn gas_price(srv: &Arc<Server>) -> Result<FeePerGas> {
         }
     }
     let blk = srv.prov.get_block_by_number(
-        alloy::eips::BlockNumberOrTag::Pending,
-        alloy::rpc::types::BlockTransactionsKind::Hashes).await?
+        alloy::eips::BlockNumberOrTag::Latest,
+        alloy::rpc::types::BlockTransactionsKind::Hashes).await
+        .context("get_block_by_number")?
         .ok_or_eyre("get_block_by_number returned None")?;
     let out = FeePerGas{
         base: blk.header.base_fee_per_gas.ok_or_eyre("Block missing base_fee_per_gas")?,
