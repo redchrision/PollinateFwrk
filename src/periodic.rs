@@ -4,7 +4,7 @@ use alloy::{
     primitives::{utils::format_ether, Address, U256},
     providers::Provider,
 };
-use eyre::{Context, Result};
+use eyre::{bail, Context, Result};
 
 use crate::{
     abi::{IPeriodic, IPeriodicDispatcher},
@@ -91,10 +91,8 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
     let gp = gas_price(srv).await?;
     let max_fee = info.last_available_nectar - srv.minimum_profit;
     let max_fee_per_gas = max_fee / U256::from(info.last_estimated_gas);
-    let max_priority = std::cmp::min(
-        max_fee_per_gas.to::<u64>() - gp.base,
-        gp.priority as u64 * 3,
-    );
+    let mut priority = gp.priority;
+    let max_priority = max_fee_per_gas.to::<u128>() - gp.base as u128;
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying Periodic for {}", addr);
@@ -105,12 +103,25 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
     let disp =
         IPeriodicDispatcher::new(PERIODIC_DISPATCHER_ADDR, srv.prov.clone());
 
-    let x = disp.dispatch(addr.clone(), info.last_available_nectar)
-        .nonce(nonce)
-        .max_priority_fee_per_gas(max_priority as _)
-        .max_fee_per_gas(max_fee_per_gas.to())
-        .send().await?
-        .with_timeout(Some(Duration::from_secs(60)));
+    let x = loop {
+        match disp.dispatch(addr.clone(), info.last_available_nectar)
+            .nonce(nonce)
+            .max_priority_fee_per_gas(priority)
+            .max_fee_per_gas(max_fee_per_gas.to())
+            .send().await
+        {
+            Ok(x) => { break x; }
+            Err(e) => {
+                if e.to_string().contains("replacement transaction underpriced") {
+                    priority += gp.priority;
+                    if priority > max_priority {
+                        bail!("Unable to make transaction, too much fee required");
+                    }
+                }
+            }
+        }
+    };
+    let x = x.with_timeout(Some(Duration::from_secs(60)));
     println!("  - TXID {}", x.tx_hash());
     let recp = x.get_receipt().await?;
     println!("  - Landed in block {}", recp.block_number.unwrap_or(0));
