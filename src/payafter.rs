@@ -224,6 +224,8 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
     let max_priority_per_gas = (max_fee - (U256::from(gp.base) * U256::from(gas))) / U256::from(gas);
     let max_total_per_gas = max_fee / U256::from(gas);
 
+    let nonce = srv.prov.get_transaction_count(srv.my_addr.clone()).await?;
+
     let contract =
         IPayAfterDispatcher::new(PAYAFTER_DISPATCHER_ADDR, srv.prov.clone());
 
@@ -238,10 +240,11 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
     .max_priority_fee_per_gas(max_priority_per_gas.to())
     .max_fee_per_gas(max_total_per_gas.to())
     .gas(gas)
+    .nonce(nonce)
     .send().await?;
 
-    println!("max_priority_fee_per_gas = {}, max_fee_per_gas = {}",
-        max_priority_per_gas, max_total_per_gas);
+    println!("max_priority_fee_per_gas = {}, max_fee_per_gas = {} nonce = {}",
+        max_priority_per_gas, max_total_per_gas, nonce);
 
     let tx = tx.with_timeout(Some(Duration::from_secs(20)));
     let txid = *tx.tx_hash();
