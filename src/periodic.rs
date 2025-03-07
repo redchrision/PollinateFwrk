@@ -88,6 +88,12 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
         }
     }
 
+    let min_nectar = if is_advantageous(srv, info.last_available_nectar / U256::from(2), &info).await? {
+        info.last_available_nectar / U256::from(2)
+    } else {
+        info.last_available_nectar
+    };
+
     let _l = srv.txn_lock.lock().await;
     println!("Trying Periodic for {}", addr);
 
@@ -96,7 +102,7 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
     let disp =
         IPeriodicDispatcher::new(PERIODIC_DISPATCHER_ADDR, srv.prov.clone());
     let x =
-        disp.dispatch(addr.clone(), info.last_available_nectar).send().await
+        disp.dispatch(addr.clone(), min_nectar).send().await
             .context("dispatch()")?
             .with_timeout(Some(Duration::from_secs(60)));
     println!("  - TXID {}", x.tx_hash());
