@@ -4,7 +4,7 @@ use alloy::{
     primitives::{utils::format_ether, Address, U256},
     providers::Provider,
 };
-use eyre::{bail, Context, Result};
+use eyre::{Context, Result};
 
 use crate::{
     abi::{IPeriodic, IPeriodicDispatcher},
@@ -88,6 +88,11 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
         }
     }
 
+    let gp = gas_price(srv).await?;
+    let max_fee = info.last_available_nectar - srv.minimum_profit;
+    let max_fee_per_gas = max_fee / U256::from(info.last_estimated_gas);
+    let max_priority = max_fee_per_gas.to::<u64>() - gp.base;
+
     let _l = srv.txn_lock.lock().await;
     println!("Trying Periodic for {}", addr);
 
@@ -99,6 +104,9 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
 
     let x = disp.dispatch(addr.clone(), info.last_available_nectar)
         .nonce(nonce)
+        .gas(info.last_estimated_gas)
+        .max_priority_fee_per_gas(max_priority as _)
+        .max_fee_per_gas(max_fee_per_gas.to())
         .send().await?
         .with_timeout(Some(Duration::from_secs(60)));
     println!("  - TXID {}", x.tx_hash());
