@@ -91,7 +91,10 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
     let gp = gas_price(srv).await?;
     let max_fee = info.last_available_nectar - srv.minimum_profit;
     let max_fee_per_gas = max_fee / U256::from(info.last_estimated_gas);
-    let max_priority = max_fee_per_gas.to::<u64>() - gp.base;
+    let max_priority = std::cmp::min(
+        max_fee_per_gas.to::<u64>() - gp.base,
+        gp.priority as u64 * 3,
+    );
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying Periodic for {}", addr);
@@ -104,7 +107,6 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
 
     let x = disp.dispatch(addr.clone(), info.last_available_nectar)
         .nonce(nonce)
-        .gas(info.last_estimated_gas)
         .max_priority_fee_per_gas(max_priority as _)
         .max_fee_per_gas(max_fee_per_gas.to())
         .send().await?
