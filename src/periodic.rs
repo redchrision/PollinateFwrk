@@ -117,6 +117,10 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
                     if priority > max_priority {
                         bail!("Unable to make transaction, too much fee required");
                     }
+                    println!("Got replacement transaction underpriced error, raising fee...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                } else {
+                    return Err(e.into());
                 }
             }
         }
