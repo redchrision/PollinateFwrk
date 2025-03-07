@@ -4,7 +4,7 @@ use alloy::{
     primitives::{utils::format_ether, Address, U256},
     providers::Provider,
 };
-use eyre::{Context,Result};
+use eyre::{bail, Context, Result};
 
 use crate::{
     abi::{IPeriodic, IPeriodicDispatcher},
@@ -88,11 +88,7 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
         }
     }
 
-    let min_nectar = if is_advantageous(srv, info.last_available_nectar / U256::from(2), &info).await? {
-        info.last_available_nectar / U256::from(2)
-    } else {
-        info.last_available_nectar
-    };
+    let mut min_nectar = info.last_available_nectar;
 
     let _l = srv.txn_lock.lock().await;
     println!("Trying Periodic for {}", addr);
@@ -101,10 +97,25 @@ async fn check_periodics(srv: &Arc<Server>) -> Result<bool> {
 
     let disp =
         IPeriodicDispatcher::new(PERIODIC_DISPATCHER_ADDR, srv.prov.clone());
-    let x =
-        disp.dispatch(addr.clone(), min_nectar).send().await
-            .context("dispatch()")?
-            .with_timeout(Some(Duration::from_secs(60)));
+
+    let x = loop {
+        match disp.dispatch(addr.clone(), min_nectar).send().await {
+            Ok(x) => { break x; }
+            Err(e) => {
+                if e.to_string().contains("Not enough nectar") {
+                    min_nectar /= U256::from(2);
+                    if !is_advantageous(srv, min_nectar, &info).await? {
+                        bail!("Not enough nectar to run txn: {}", min_nectar);
+                    } else {
+                        println!("Not enough nectar according to contract, retrying with half");
+                    }
+                } else {
+                    return Err(e.into());
+                }
+            }
+        }
+    };
+    let x = x.with_timeout(Some(Duration::from_secs(60)));
     println!("  - TXID {}", x.tx_hash());
     let recp = x.get_receipt().await?;
     println!("  - Landed in block {}", recp.block_number.unwrap_or(0));
