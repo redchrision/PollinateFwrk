@@ -220,6 +220,7 @@ async fn run_txn(txn: &Transaction, srv: &Arc<Server>) -> Result<(B256,bool)> {
     let gas = txn.estimated_gas.ok_or_eyre("missing gas")?;
     let gp = gas_price(srv).await?;
 
+    println!("Base gas fee: {}", gp.base);
     let max_priority_per_gas = (max_fee - (U256::from(gp.base) * U256::from(gas))) / U256::from(gas);
     let max_total_per_gas = max_fee / U256::from(gas);
 
